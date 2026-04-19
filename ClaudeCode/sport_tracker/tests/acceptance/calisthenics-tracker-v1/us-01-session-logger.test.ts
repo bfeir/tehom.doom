@@ -168,7 +168,7 @@ describe("Logging a session stores the training data correctly", () => {
     expect(closed.entries[0].formQuality).toBeNull();
   });
 
-  it.skip("saves a session with a free-text exercise name when exercise is not in the registry", async () => {
+  it("saves a session with a free-text exercise name when exercise is not in the registry", async () => {
     /**
      * Given Marco types "Bulgarian Ring Push-up" which is not in the RR library
      * When he completes the entry and saves
@@ -263,7 +263,7 @@ describe("Logging multiple exercises in a single training session", () => {
 // ---------------------------------------------------------------------------
 
 describe("Closed session cannot have new entries added (session state machine)", () => {
-  it.skip("rejects adding an entry to a closed session", async () => {
+  it("rejects adding an entry to a closed session", async () => {
     /**
      * Given Marco has already closed his session
      * When he attempts to add another exercise entry to that closed session

@@ -140,10 +140,24 @@ export class SessionRepository implements SessionPort {
   }
 
   async findByUserAndExercise(
-    _userId: string,
-    _exerciseId: string,
-    _limit = 10
+    userId: string,
+    exerciseId: string,
+    limit = 10
   ): Promise<Session[]> {
-    throw new Error("Not yet implemented -- RED scaffold");
+    const { data, error } = await this.supabaseClient
+      .from("sessions")
+      .select()
+      .eq("user_id", userId)
+      .order("logged_at", { ascending: false })
+      .returns<SessionRow[]>();
+
+    if (error) {
+      throw new Error(`SessionRepository.findByUserAndExercise failed: ${error.message}`);
+    }
+
+    return data
+      .filter((row) => row.entries.some((e) => e.exerciseId === exerciseId))
+      .slice(0, limit)
+      .map(rowToSession);
   }
 }
