@@ -1,0 +1,6 @@
+node_modules/
+dist/
+.env
+.env.local
+.env.production
+# .env.test is committed (local dev keys only — no production secrets)
