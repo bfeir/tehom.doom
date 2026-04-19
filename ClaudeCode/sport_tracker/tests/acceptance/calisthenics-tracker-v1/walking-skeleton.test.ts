@@ -21,6 +21,7 @@ import type { ExercisePort } from "../../../src/ports/ExercisePort.js";
 import type { ReadinessPort } from "../../../src/ports/ReadinessPort.js";
 import type { ProgressionPort } from "../../../src/ports/ProgressionPort.js";
 import { SessionRepository } from "../../../src/repositories/SessionRepository.js";
+import { ProgressionRepository } from "../../../src/repositories/ProgressionRepository.js";
 
 // ---------------------------------------------------------------------------
 // Test environment setup
@@ -64,7 +65,7 @@ beforeAll(async () => {
   const { ReadinessEngine } = await import("../../../src/services/ReadinessEngine.js");
   readinessPort = new ReadinessEngine(supabaseAdmin);
 
-  // progressionPort wired in subsequent steps
+  progressionPort = new ProgressionRepository(supabaseAdmin);
 });
 
 afterAll(async () => {
@@ -148,7 +149,7 @@ describe("Marco makes his first progression decision (online)", () => {
     expect(signal!.criterionSummary).toContain("8");
   });
 
-  it.skip("can see their current position in the push progression chain", async () => {
+  it("can see their current position in the push progression chain", async () => {
     /**
      * Given Marco is at Pike Push-up in the push track
      * When he opens the push progression tree
