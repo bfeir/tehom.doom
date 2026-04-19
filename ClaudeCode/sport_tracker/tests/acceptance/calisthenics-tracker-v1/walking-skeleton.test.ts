@@ -58,11 +58,21 @@ beforeAll(async () => {
   const supabaseAdmin = createClient(supabaseUrl, supabaseServiceRoleKey);
   sessionPort = new SessionRepository(supabaseAdmin, null);
 
-  // readinessPort, progressionPort wired in subsequent steps
+  // Clean up any stale test data from previous runs to ensure isolation
+  await supabaseAdmin.from("sessions").delete().eq("user_id", TEST_USER_ID);
+
+  const { ReadinessEngine } = await import("../../../src/services/ReadinessEngine.js");
+  readinessPort = new ReadinessEngine(supabaseAdmin);
+
+  // progressionPort wired in subsequent steps
 });
 
 afterAll(async () => {
-  // TODO: clean up test user data from Supabase test project
+  const { createClient } = await import("@supabase/supabase-js");
+  const supabaseUrl = process.env["SUPABASE_URL"]!;
+  const supabaseServiceRoleKey = process.env["SUPABASE_SERVICE_ROLE_KEY"]!;
+  const supabaseAdmin = createClient(supabaseUrl, supabaseServiceRoleKey);
+  await supabaseAdmin.from("sessions").delete().eq("user_id", TEST_USER_ID);
 });
 
 // ---------------------------------------------------------------------------
@@ -115,7 +125,7 @@ describe("Marco makes his first progression decision (online)", () => {
     expect(closed.entries[0].formQuality).toBe(4);
   });
 
-  it.skip("receives a readiness signal with the RR criterion cited after logging", async () => {
+  it("receives a readiness signal with the RR criterion cited after logging", async () => {
     /**
      * Given Marco has logged one qualifying session for Pike Push-up (3×8 at form 4/5)
      * When the readiness signal is computed
