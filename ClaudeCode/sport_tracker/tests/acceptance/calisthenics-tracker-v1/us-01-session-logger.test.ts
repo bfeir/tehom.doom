@@ -11,23 +11,30 @@
  * Enable one at a time: implement → green → commit → enable next.
  */
 
-import { describe, it, expect, beforeEach, beforeAll } from "vitest";
+import { describe, it, expect, afterEach, beforeAll } from "vitest";
 import type { SessionPort } from "../../../src/ports/SessionPort.js";
 import type { ExercisePort } from "../../../src/ports/ExercisePort.js";
 
 let sessionPort: SessionPort;
 let exercisePort: ExercisePort;
 const USER_MARCO = "user-marco-us01";
-const PIKE_PUSH_UP_ID = "exercise-pike-push-up";
+let PIKE_PUSH_UP_ID: string;
+
+// Supabase admin client for cleanup (module-level so afterEach can use it)
+let supabaseAdmin: Awaited<ReturnType<typeof import("@supabase/supabase-js")["createClient"]>>;
 
 beforeAll(async () => {
   const { createClient } = await import("@supabase/supabase-js");
   const { ExerciseRepository } = await import(
     "../../../src/repositories/ExerciseRepository.js"
   );
+  const { SessionRepository } = await import(
+    "../../../src/repositories/SessionRepository.js"
+  );
 
   const supabaseUrl = process.env["SUPABASE_URL"];
   const supabaseAnonKey = process.env["SUPABASE_ANON_KEY"];
+  const supabaseServiceRoleKey = process.env["SUPABASE_SERVICE_ROLE_KEY"];
 
   if (!supabaseUrl || !supabaseAnonKey) {
     throw new Error(
@@ -35,8 +42,30 @@ beforeAll(async () => {
     );
   }
 
+  if (!supabaseServiceRoleKey) {
+    throw new Error(
+      "Missing SUPABASE_SERVICE_ROLE_KEY env var. Check .env.test."
+    );
+  }
+
   const supabase = createClient(supabaseUrl, supabaseAnonKey);
   exercisePort = new ExerciseRepository(supabase);
+
+  supabaseAdmin = createClient(supabaseUrl, supabaseServiceRoleKey);
+  sessionPort = new SessionRepository(supabaseAdmin, false);
+
+  // Resolve real Pike Push-up ID from the registry
+  const pikeResults = await exercisePort.search("pike");
+  PIKE_PUSH_UP_ID = pikeResults[0].id;
+});
+
+afterEach(async () => {
+  if (supabaseAdmin) {
+    await supabaseAdmin
+      .from("sessions")
+      .delete()
+      .in("user_id", ["user-marco-us01", "user-tomas-us01"]);
+  }
 });
 
 // ---------------------------------------------------------------------------
@@ -94,7 +123,7 @@ describe("Exercise autocomplete returns RR suggestions quickly", () => {
 // ---------------------------------------------------------------------------
 
 describe("Logging a session stores the training data correctly", () => {
-  it.skip("stores session with RR exercise ID when exercise is from the registry", async () => {
+  it("stores session with RR exercise ID when exercise is from the registry", async () => {
     /**
      * Given Marco selects "Pike Push-up" from the exercise registry
      * When he enters 3 sets of 8 reps at form quality 4 out of 5 and saves
@@ -118,7 +147,7 @@ describe("Logging a session stores the training data correctly", () => {
     expect(closed.entries[0].formQuality).toBe(4);
   });
 
-  it.skip("saves a session without form quality when user skips that field", async () => {
+  it("saves a session without form quality when user skips that field", async () => {
     /**
      * Given Marco logs pike push-ups 3×8 but deliberately skips the form quality field
      * When the session is saved
@@ -167,7 +196,7 @@ describe("Logging a session stores the training data correctly", () => {
 // ---------------------------------------------------------------------------
 
 describe("Logging multiple exercises in a single training session", () => {
-  it.skip("stores all exercises as entries in the same session", async () => {
+  it("stores all exercises as entries in the same session", async () => {
     /**
      * Given Tomás is logging his full RR push and pull session
      * When he adds pike push-ups (3×8) and then Australian rows (3×6) to the same session
@@ -198,7 +227,7 @@ describe("Logging multiple exercises in a single training session", () => {
     expect(closed.entries[1].exerciseName).toBe("Australian Rows");
   });
 
-  it.skip("allows multiple entries for the same exercise within one session", async () => {
+  it("allows multiple entries for the same exercise within one session", async () => {
     /**
      * Given Marco logs two separate exercise entries for pike push-ups in one session
      * (different set/rep counts representing warm-up vs. working sets)
