@@ -77,7 +77,7 @@ describe("Exercise autocomplete returns RR suggestions quickly", () => {
     expect(byHyphen[0].id).toBe(byAbbrev[0].id);
   });
 
-  it.skip("returns no results and allows free-text when exercise is not in the RR library", async () => {
+  it("returns no results and allows free-text when exercise is not in the RR library", async () => {
     /**
      * Given Marco types "Bulgarian Ring Push-up" which is not in the RR registry
      * When the autocomplete completes
@@ -330,7 +330,7 @@ describe("Session saved and queued when device is offline", () => {
 // ---------------------------------------------------------------------------
 
 describe("Error: exercise not found in the RR registry", () => {
-  it.skip("returns an empty results list when the exercise name does not match any RR exercise", async () => {
+  it("returns an empty results list when the exercise name does not match any RR exercise", async () => {
     /**
      * Given Marco types a completely made-up exercise name
      * When the exercise search runs
