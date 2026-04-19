@@ -1,4 +1,4 @@
-// SessionRepository — adapter implementing SessionPort against Supabase + IndexedDB
+// SessionRepository — adapter implementing SessionPort against Supabase + in-memory offline queue
 // This is the ONLY layer permitted to import supabaseClient (AA3).
 
 import type { SupabaseClient } from "@supabase/supabase-js";
@@ -35,16 +35,31 @@ function rowToSession(row: SessionRow): Session {
 // ---------------------------------------------------------------------------
 
 export class SessionRepository implements SessionPort {
+  private queue: Session[] = [];
+
   /**
    * @param supabaseClient — real Supabase JS client (online path)
-   * @param indexedDBAdapter — offline queue adapter (not yet implemented)
+   * @param offline — when true, writes go to the in-memory queue instead of Supabase
    */
   constructor(
     private readonly supabaseClient: SupabaseClient,
-    private readonly indexedDBAdapter: unknown
+    private readonly offline: boolean = false
   ) {}
 
   async create(userId: string): Promise<Session> {
+    if (this.offline) {
+      const session: Session = {
+        id: crypto.randomUUID(),
+        userId,
+        entries: [],
+        loggedAt: new Date(),
+        syncedAt: null,
+        isOpen: true,
+      };
+      this.queue.push(session);
+      return session;
+    }
+
     const { data, error } = await this.supabaseClient
       .from("sessions")
       .insert({ user_id: userId, entries: [] })
@@ -104,8 +119,24 @@ export class SessionRepository implements SessionPort {
     return rowToSession(data);
   }
 
-  async sync(_userId: string): Promise<number> {
-    throw new Error("Not yet implemented -- RED scaffold");
+  async sync(userId: string): Promise<number> {
+    const toSync = this.queue.filter((session) => session.userId === userId);
+    for (const session of toSync) {
+      await this.supabaseClient.from("sessions").insert({
+        id: session.id,
+        user_id: session.userId,
+        entries: session.entries,
+        is_open: session.isOpen,
+        logged_at: session.loggedAt.toISOString(),
+      });
+    }
+    const count = toSync.length;
+    this.queue = this.queue.filter((session) => session.userId !== userId);
+    return count;
+  }
+
+  getQueueDepth(userId: string): number {
+    return this.queue.filter((session) => session.userId === userId).length;
   }
 
   async findByUserAndExercise(

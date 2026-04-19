@@ -22,6 +22,7 @@ import type { ReadinessPort } from "../../../src/ports/ReadinessPort.js";
 import type { ProgressionPort } from "../../../src/ports/ProgressionPort.js";
 import { SessionRepository } from "../../../src/repositories/SessionRepository.js";
 import { ProgressionRepository } from "../../../src/repositories/ProgressionRepository.js";
+import { SyncCoordinator } from "../../../src/services/SyncCoordinator.js";
 
 // ---------------------------------------------------------------------------
 // Test environment setup
@@ -33,6 +34,8 @@ let sessionPort: SessionPort;
 let exercisePort: ExercisePort;
 let readinessPort: ReadinessPort;
 let progressionPort: ProgressionPort;
+let offlineSessionRepo: SessionRepository;
+let syncCoordinator: SyncCoordinator;
 
 const TEST_USER_ID = "test-user-marco-ws";
 const PIKE_PUSH_UP_SLUG = "pike-push-up-ppp";
@@ -57,13 +60,17 @@ beforeAll(async () => {
     throw new Error("Missing SUPABASE_SERVICE_ROLE_KEY env var. Check .env.test.");
   }
   const supabaseAdmin = createClient(supabaseUrl, supabaseServiceRoleKey);
-  sessionPort = new SessionRepository(supabaseAdmin, null);
+  sessionPort = new SessionRepository(supabaseAdmin, false);
+  offlineSessionRepo = new SessionRepository(supabaseAdmin, true);
 
   // Clean up any stale test data from previous runs to ensure isolation
   await supabaseAdmin.from("sessions").delete().eq("user_id", TEST_USER_ID);
+  await supabaseAdmin.from("sessions").delete().eq("user_id", "test-user-sofia-ws");
 
   const { ReadinessEngine } = await import("../../../src/services/ReadinessEngine.js");
   readinessPort = new ReadinessEngine(supabaseAdmin);
+
+  syncCoordinator = new SyncCoordinator(offlineSessionRepo, readinessPort);
 
   progressionPort = new ProgressionRepository(supabaseAdmin);
 });
@@ -178,7 +185,7 @@ describe("Marco makes his first progression decision (online)", () => {
 // ---------------------------------------------------------------------------
 
 describe("Sofia logs a session when her device has no connectivity", () => {
-  it.skip("session is stored locally when the device is offline and syncs automatically on reconnect", async () => {
+  it("session is stored locally when the device is offline and syncs automatically on reconnect", async () => {
     /**
      * Given Sofia's device has no internet connection
      * When she logs Australian rows 3×5 at form quality 3 out of 5 and saves
@@ -189,17 +196,14 @@ describe("Sofia logs a session when her device has no connectivity", () => {
      * And her readiness signal is computed and displayed
      */
 
-    // Simulate offline: use IndexedDB adapter directly (real jsdom IndexedDB)
-    // Software-crafter: inject IndexedDBSessionAdapter here bypassing Supabase
-    const offlineSession = await sessionPort.create("test-user-sofia-ws");
-    // NOTE: in offline scenario, create() should write to IndexedDB queue
-    // and syncedAt should be null until drain() is called.
+    // Simulate offline: offlineSessionRepo uses in-memory queue (offline=true)
+    const offlineSession = await offlineSessionRepo.create("test-user-sofia-ws");
+    // Offline write: syncedAt must be null (not yet synced to Supabase)
     expect(offlineSession.syncedAt).toBeNull();
 
     // Simulate reconnect: drain the queue
-    // const syncCoordinator = new SyncCoordinator(sessionPort, readinessPort);
-    // const status = await syncCoordinator.drain("test-user-sofia-ws");
-    // expect(status.pendingCount).toBe(0);
-    // expect(status.syncStatus).toBe("idle");
+    const status = await syncCoordinator.drain("test-user-sofia-ws");
+    expect(status.pendingCount).toBe(0);
+    expect(status.syncStatus).toBe("idle");
   });
 });
