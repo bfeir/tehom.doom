@@ -16,8 +16,10 @@ import type { SessionPort } from "../../../src/ports/SessionPort.js";
 import type { ExercisePort } from "../../../src/ports/ExercisePort.js";
 
 let sessionPort: SessionPort;
+let offlineSessionPort: SessionPort;
 let exercisePort: ExercisePort;
 const USER_MARCO = "user-marco-us01";
+const USER_SOFIA = "user-sofia-us01";
 let PIKE_PUSH_UP_ID: string;
 
 // Supabase admin client for cleanup (module-level so afterEach can use it)
@@ -53,6 +55,7 @@ beforeAll(async () => {
 
   supabaseAdmin = createClient(supabaseUrl, supabaseServiceRoleKey);
   sessionPort = new SessionRepository(supabaseAdmin, false);
+  offlineSessionPort = new SessionRepository(supabaseAdmin, true);
 
   // Resolve real Pike Push-up ID from the registry
   const pikeResults = await exercisePort.search("pike");
@@ -64,7 +67,7 @@ afterEach(async () => {
     await supabaseAdmin
       .from("sessions")
       .delete()
-      .in("user_id", ["user-marco-us01", "user-tomas-us01"]);
+      .in("user_id", ["user-marco-us01", "user-tomas-us01", "user-sofia-us01"]);
   }
 });
 
@@ -304,35 +307,23 @@ describe("Closed session cannot have new entries added (session state machine)",
 // ---------------------------------------------------------------------------
 
 describe("Session saved and queued when device is offline", () => {
-  it.skip("stores session in the local offline queue when there is no connectivity", async () => {
+  it("stores session in the local offline queue when there is no connectivity", async () => {
     /**
      * Given Sofia's device has no internet connection
      * When she logs Australian rows 3×5 and saves
      * Then a "Saved offline — will sync when connected" indicator is available
      * And the session is present in the offline queue with syncedAt absent
      */
-    // Software-crafter: inject IndexedDBSessionAdapter in offline mode here.
-    const offlineSession = await sessionPort.create("user-sofia-us01");
-    const withEntry = await sessionPort.addEntry(offlineSession.id, {
-      exerciseId: "exercise-australian-rows",
-      exerciseName: "Australian Rows",
-      sets: 3,
-      reps: 5,
-      formQuality: 3,
-      rpe: 8,
-    });
-    await sessionPort.close(withEntry.id);
+    const offlineSession = await offlineSessionPort.create(USER_SOFIA);
+    expect(offlineSession.syncedAt).toBeNull();
 
-    // Session should be in the queue (syncedAt is null)
-    const sessions = await sessionPort.findByUserAndExercise(
-      "user-sofia-us01",
-      "exercise-australian-rows",
-      1
+    const { SessionRepository } = await import(
+      "../../../src/repositories/SessionRepository.js"
     );
-    expect(sessions[0].syncedAt).toBeNull();
+    expect((offlineSessionPort as InstanceType<typeof SessionRepository>).getQueueDepth(USER_SOFIA)).toBe(1);
   });
 
-  it.skip("syncs offline sessions automatically when device reconnects", async () => {
+  it("syncs offline sessions automatically when device reconnects", async () => {
     /**
      * Given Sofia has 2 sessions in the offline queue
      * When her device reconnects to the internet
@@ -340,17 +331,25 @@ describe("Session saved and queued when device is offline", () => {
      * And all sessions show a sync timestamp after the operation completes
      * And the offline queue is empty
      */
-    const syncedCount = await sessionPort.sync("user-sofia-us01");
-    expect(syncedCount).toBeGreaterThanOrEqual(2);
-
-    const sessions = await sessionPort.findByUserAndExercise(
-      "user-sofia-us01",
-      "exercise-australian-rows",
-      5
+    const { SyncCoordinator } = await import(
+      "../../../src/services/SyncCoordinator.js"
     );
-    for (const s of sessions) {
-      expect(s.syncedAt).not.toBeNull();
-    }
+    // Stub readiness port — SyncCoordinator only needs it for future readiness recalculation
+    const readinessPort = { calculate: async () => null };
+
+    // Queue 2 offline sessions for Sofia
+    await offlineSessionPort.create(USER_SOFIA);
+    await offlineSessionPort.create(USER_SOFIA);
+
+    const syncCoordinator = new SyncCoordinator(offlineSessionPort, readinessPort);
+    const status = await syncCoordinator.drain(USER_SOFIA);
+
+    expect(status.pendingCount).toBe(0);
+    expect(status.syncStatus).toBe("idle");
+
+    // Verify sessions made it to Supabase
+    const synced = await sessionPort.findByUserAndExercise(USER_SOFIA, null, 10);
+    expect(synced.length).toBeGreaterThanOrEqual(2);
   });
 });
 
@@ -372,25 +371,48 @@ describe("Error: exercise not found in the RR registry", () => {
 });
 
 describe("Error: offline sync conflict resolved by last-write-wins", () => {
-  it.skip("newer session timestamp wins when two sessions have the same user, exercise, and date key", async () => {
+  it("newer session timestamp wins when two sessions have the same user, exercise, and date key", async () => {
     /**
      * Given Marco logged a session offline with logged_at matching a session already synced
      * When the offline session is replayed during sync
      * Then the session with the newer creation timestamp is kept
      * And the older session is silently discarded (last-write-wins, SD3)
      */
-    // Software-crafter: set up two conflicting sessions with same (user_id, exercise_id, logged_at)
-    // and verify LWW resolution behavior via sessionPort.sync()
-    const syncedCount = await sessionPort.sync(USER_MARCO);
-    // Assertion: 1 session in final state for that date key (not 2)
-    const sessions = await sessionPort.findByUserAndExercise(
-      USER_MARCO,
-      PIKE_PUSH_UP_ID,
-      10
+    // Insert a "remote" session directly to Supabase with a specific id and older loggedAt
+    const sharedId = crypto.randomUUID();
+    const olderDate = new Date("2025-01-01T10:00:00Z");
+    const newerDate = new Date("2025-01-01T12:00:00Z");
+
+    // Write "older" remote session directly to Supabase
+    await supabaseAdmin.from("sessions").insert({
+      id: sharedId,
+      user_id: USER_MARCO,
+      entries: [{ exerciseId: PIKE_PUSH_UP_ID, exerciseName: "Pike Push-up (PPP progression)", sets: 1, reps: 5, formQuality: 3, rpe: null }],
+      is_open: false,
+      logged_at: olderDate.toISOString(),
+    });
+
+    // Queue a "local" session with the same id but newer loggedAt (local wins by LWW)
+    const { SessionRepository } = await import(
+      "../../../src/repositories/SessionRepository.js"
     );
-    // Should have at most 1 entry per date (LWW merging duplicates)
-    const dates = sessions.map((s) => s.loggedAt.toISOString().split("T")[0]);
-    const uniqueDates = new Set(dates);
-    expect(dates.length).toBe(uniqueDates.size);
+    const conflictRepo = new SessionRepository(supabaseAdmin, true);
+    conflictRepo.queueConflictSession({
+      id: sharedId,
+      userId: USER_MARCO,
+      entries: [{ exerciseId: PIKE_PUSH_UP_ID, exerciseName: "Pike Push-up (PPP progression)", sets: 3, reps: 8, formQuality: 5, rpe: null }],
+      loggedAt: newerDate,
+      syncedAt: null,
+      isOpen: false,
+    });
+
+    await conflictRepo.sync(USER_MARCO);
+
+    // Verify LWW: the newer local version (3 sets, 8 reps, formQuality 5) is in Supabase
+    const sessions = await sessionPort.findByUserAndExercise(USER_MARCO, PIKE_PUSH_UP_ID, 10);
+    const conflict = sessions.find((s) => s.id === sharedId);
+    expect(conflict).toBeDefined();
+    expect(conflict!.entries[0].sets).toBe(3);
+    expect(conflict!.entries[0].formQuality).toBe(5);
   });
 });

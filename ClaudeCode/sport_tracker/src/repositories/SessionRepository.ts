@@ -119,18 +119,41 @@ export class SessionRepository implements SessionPort {
     return rowToSession(data);
   }
 
+  /**
+   * Queue a pre-built session (used for conflict testing / LWW scenarios).
+   * The session is added to the in-memory queue as-is, bypassing create().
+   */
+  queueConflictSession(session: Session): void {
+    this.queue.push(session);
+  }
+
   async sync(userId: string): Promise<number> {
     const toSync = this.queue.filter((session) => session.userId === userId);
+    let count = 0;
     for (const session of toSync) {
-      await this.supabaseClient.from("sessions").insert({
+      // LWW: check if a remote version with the same id already exists and is newer
+      const { data: existing } = await this.supabaseClient
+        .from("sessions")
+        .select("logged_at")
+        .eq("id", session.id)
+        .maybeSingle<Pick<SessionRow, "logged_at">>();
+
+      if (existing && new Date(existing.logged_at) >= session.loggedAt) {
+        // Remote is same age or newer — skip (remote wins)
+        continue;
+      }
+
+      // Local is newer or doesn't exist remotely — upsert
+      await this.supabaseClient.from("sessions").upsert({
         id: session.id,
         user_id: session.userId,
         entries: session.entries,
         is_open: session.isOpen,
         logged_at: session.loggedAt.toISOString(),
+        synced_at: new Date().toISOString(),
       });
+      count++;
     }
-    const count = toSync.length;
     this.queue = this.queue.filter((session) => session.userId !== userId);
     return count;
   }
@@ -141,7 +164,7 @@ export class SessionRepository implements SessionPort {
 
   async findByUserAndExercise(
     userId: string,
-    exerciseId: string,
+    exerciseId: string | null,
     limit = 10
   ): Promise<Session[]> {
     const { data, error } = await this.supabaseClient
@@ -155,9 +178,10 @@ export class SessionRepository implements SessionPort {
       throw new Error(`SessionRepository.findByUserAndExercise failed: ${error.message}`);
     }
 
-    return data
-      .filter((row) => row.entries.some((e) => e.exerciseId === exerciseId))
-      .slice(0, limit)
-      .map(rowToSession);
+    const filtered = exerciseId === null
+      ? data
+      : data.filter((row) => row.entries.some((e) => e.exerciseId === exerciseId));
+
+    return filtered.slice(0, limit).map(rowToSession);
   }
 }

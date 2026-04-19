@@ -30,10 +30,11 @@ export interface SessionPort {
 
   /**
    * Retrieve all sessions for a user and exercise, ordered by loggedAt descending.
+   * Pass null for exerciseId to retrieve all sessions for the user regardless of exercise.
    */
   findByUserAndExercise(
     userId: string,
-    exerciseId: string,
+    exerciseId: string | null,
     limit?: number
   ): Promise<Session[]>;
 }
