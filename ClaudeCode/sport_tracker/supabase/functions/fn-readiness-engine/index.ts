@@ -80,8 +80,9 @@ Deno.serve(async (req: Request) => {
       rr_criteria: ReadinessCriterion;
       rr_wiki_url: string;
       chain_order: number;
+      track: string;
     }>>`
-      SELECT id, name, rr_criteria, rr_wiki_url, chain_order
+      SELECT id, name, rr_criteria, rr_wiki_url, chain_order, track
       FROM exercises
       WHERE id = ${exerciseId}
       LIMIT 1
@@ -182,6 +183,24 @@ Deno.serve(async (req: Request) => {
 
     const rrWikiUrl = criterion.rrWikiUrl ?? exercise.rr_wiki_url ?? "";
 
+    // 7. Look up next exercise in chain when READY
+    let nextExerciseId: string | null = null;
+    let nextExerciseName: string | null = null;
+
+    if (state === "READY") {
+      const nextExercises = await sql<Array<{ id: string; name: string }>>`
+        SELECT id, name
+        FROM exercises
+        WHERE track = ${exercise.track}
+          AND chain_order = ${exercise.chain_order + 1}
+        LIMIT 1
+      `;
+      if (nextExercises.length > 0) {
+        nextExerciseId = nextExercises[0].id;
+        nextExerciseName = nextExercises[0].name;
+      }
+    }
+
     const signal: ReadinessSignal = {
       state,
       criterion: {
@@ -190,8 +209,8 @@ Deno.serve(async (req: Request) => {
       },
       streakCurrent: streak,
       streakRequired: criterion.consecutiveSessions,
-      nextExerciseId: null,
-      nextExerciseName: null,
+      nextExerciseId,
+      nextExerciseName,
       formScoreHistory,
       criterionSummary: `${criterion.targetSets}×${criterion.targetReps} at form ≥${criterion.minFormQuality}/5 for ${criterion.consecutiveSessions} consecutive sessions`,
       rrWikiUrl,
