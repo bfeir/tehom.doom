@@ -88,11 +88,25 @@ export class ExerciseRepository implements ExercisePort {
     return (data as ExerciseRow[]).map(toExercise);
   }
 
+  private normalizeQuery(query: string): string {
+    const aliases: Record<string, string> = {
+      "pike pushup": "pike push-up",
+      "ppp progression": "pike push-up",
+      "knee pushup": "knee push-up",
+      "wall pushup": "wall push-up",
+      "regular pushup": "regular push-up",
+      "diamond pushup": "diamond push-up",
+    };
+    const lower = query.toLowerCase().trim();
+    return aliases[lower] ?? query;
+  }
+
   async search(query: string): Promise<Exercise[]> {
+    const normalized = this.normalizeQuery(query);
     const { data, error } = await this.supabaseClient
       .from("exercises")
       .select("*")
-      .ilike("name", `%${query}%`)
+      .ilike("name", `%${normalized}%`)
       .order("chain_order", { ascending: true });
 
     if (error) {

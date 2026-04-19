@@ -1,9 +1,11 @@
 /**
  * ExerciseRepository unit tests
  *
- * Test Budget: 2 distinct behaviors × 2 = 4 max unit tests
+ * Test Budget: 4 distinct behaviors × 2 = 8 max unit tests
  * Behavior 1: search() returns exercises matching a partial name (ilike)
  * Behavior 2: search() returns empty array for empty string query
+ * Behavior 3: search("pike pushup") normalizes to "pike push-up" before querying
+ * Behavior 4: search("PPP progression") normalizes to "pike push-up" before querying
  *
  * Port-to-port: tests invoke through ExercisePort (driving port) interface,
  * mock only the Supabase client (driven port boundary).
@@ -25,7 +27,7 @@ function buildMockSupabaseClient(rows: unknown[]) {
   };
   return {
     from: vi.fn().mockReturnValue(queryBuilder),
-    _queryBuilder: queryBuilder,
+    queryBuilder,
   };
 }
 
@@ -81,5 +83,35 @@ describe("ExerciseRepository (via ExercisePort)", () => {
     const results = await repo.search("zzznomatch");
 
     expect(results).toHaveLength(0);
+  });
+
+  /**
+   * Behavior 3: search("pike pushup") normalizes to "pike push-up" before the ilike query
+   */
+  it("normalizes 'pike pushup' alias to 'pike push-up' before querying Supabase", async () => {
+    const mockClient = buildMockSupabaseClient([]);
+    const repo: ExercisePort = new ExerciseRepository(mockClient as never);
+
+    await repo.search("pike pushup");
+
+    expect(mockClient.queryBuilder.ilike).toHaveBeenCalledWith(
+      "name",
+      "%pike push-up%"
+    );
+  });
+
+  /**
+   * Behavior 4: search("PPP progression") normalizes to "pike push-up" before the ilike query
+   */
+  it("normalizes 'PPP progression' alias to 'pike push-up' before querying Supabase", async () => {
+    const mockClient = buildMockSupabaseClient([]);
+    const repo: ExercisePort = new ExerciseRepository(mockClient as never);
+
+    await repo.search("PPP progression");
+
+    expect(mockClient.queryBuilder.ilike).toHaveBeenCalledWith(
+      "name",
+      "%pike push-up%"
+    );
   });
 });
