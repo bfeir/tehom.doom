@@ -20,6 +20,7 @@ import type { SessionPort } from "../../../src/ports/SessionPort.js";
 import type { ExercisePort } from "../../../src/ports/ExercisePort.js";
 import type { ReadinessPort } from "../../../src/ports/ReadinessPort.js";
 import type { ProgressionPort } from "../../../src/ports/ProgressionPort.js";
+import { SessionRepository } from "../../../src/repositories/SessionRepository.js";
 
 // ---------------------------------------------------------------------------
 // Test environment setup
@@ -50,7 +51,14 @@ beforeAll(async () => {
   const supabase = createClient(supabaseUrl, supabaseAnonKey);
   exercisePort = new ExerciseRepository(supabase);
 
-  // sessionPort, readinessPort, progressionPort wired in subsequent steps
+  const supabaseServiceRoleKey = process.env["SUPABASE_SERVICE_ROLE_KEY"];
+  if (!supabaseServiceRoleKey) {
+    throw new Error("Missing SUPABASE_SERVICE_ROLE_KEY env var. Check .env.test.");
+  }
+  const supabaseAdmin = createClient(supabaseUrl, supabaseServiceRoleKey);
+  sessionPort = new SessionRepository(supabaseAdmin, null);
+
+  // readinessPort, progressionPort wired in subsequent steps
 });
 
 afterAll(async () => {
@@ -81,7 +89,7 @@ describe("Marco makes his first progression decision (online)", () => {
     pikeExerciseId = suggestions[0].id;
   });
 
-  it.skip("logs a push session with sets, reps, and form quality", async () => {
+  it("logs a push session with sets, reps, and form quality", async () => {
     /**
      * Given Marco has selected Pike Push-up from the exercise registry
      * When he enters 3 sets of 8 reps at form quality 4 out of 5 and saves
