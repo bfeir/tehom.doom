@@ -23,7 +23,7 @@ const USER_MARCO = "user-marco-us04";
 const USER_SOFIA = "user-sofia-us04";
 let PIKE_PUSH_UP_ID: string;
 let FEET_ELEVATED_PPP_ID: string;
-const AUSTRALIAN_ROWS_ID = "exercise-australian-rows";
+let AUSTRALIAN_ROWS_ID: string;
 
 beforeAll(async () => {
   const supabaseAdmin = createClient(
@@ -49,10 +49,46 @@ beforeAll(async () => {
     throw new Error("Could not find Feet Elevated PPP after Pike Push-up in chain");
   }
   FEET_ELEVATED_PPP_ID = pushChain[pikeIndex + 1].id;
+
+  // Seed user_progression for USER_MARCO at FEET_ELEVATED_PPP_ID (scenario 04-3)
+  await supabaseAdmin.from("user_progression").upsert({
+    user_id: USER_MARCO,
+    track: "push",
+    current_exercise_id: FEET_ELEVATED_PPP_ID,
+  });
+
+  // Resolve AUSTRALIAN_ROWS_ID from real pull chain data (scenario 04-5)
+  const pullExercises = await exerciseRepo.findProgressionChain("pull");
+  if (pullExercises.length > 0) {
+    AUSTRALIAN_ROWS_ID = pullExercises.find((ex) => ex.name === "Australian Rows")?.id
+      ?? pullExercises[0].id;
+  } else {
+    // Insert Australian Rows if no pull exercises exist
+    const { data: inserted } = await supabaseAdmin
+      .from("exercises")
+      .insert({
+        name: "Australian Rows",
+        track: "pull",
+        chain_order: 1,
+        rr_wiki_url: "https://www.reddit.com/r/bodyweightfitness/wiki/move/phase1/rows",
+      })
+      .select("id")
+      .single();
+    if (!inserted) throw new Error("Failed to insert Australian Rows");
+    AUSTRALIAN_ROWS_ID = inserted.id;
+  }
 });
 
 afterAll(async () => {
-  // No test data seeded in 05-01 — no cleanup needed
+  const supabaseAdmin = createClient(
+    process.env.SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  );
+  // Clean up USER_MARCO's progression row (seeded in beforeAll for scenario 04-3)
+  await supabaseAdmin
+    .from("user_progression")
+    .delete()
+    .eq("user_id", USER_MARCO);
 });
 
 // ---------------------------------------------------------------------------
@@ -109,7 +145,7 @@ describe("Push progression chain shows all RR push exercises in order", () => {
 // ---------------------------------------------------------------------------
 
 describe("User can identify their current position in the push chain", () => {
-  it.skip("current exercise is findable by ID in the push chain when user has progressed", async () => {
+  it("current exercise is findable by ID in the push chain when user has progressed", async () => {
     /**
      * Given Marco's current push exercise is "Feet Elevated PPP"
      * When he opens the push progression tree
@@ -164,7 +200,7 @@ describe("Tapping an exercise shows its RR criteria and wiki citation", () => {
 // ---------------------------------------------------------------------------
 
 describe("Pull progression chain shows RR pull exercises in order (Release 2)", () => {
-  it.skip("returns all RR pull exercises in chain order when pull track is requested", async () => {
+  it("returns all RR pull exercises in chain order when pull track is requested", async () => {
     /**
      * Given Sofia's current pull exercise is "Australian Rows"
      * When she opens the pull progression tree
@@ -186,7 +222,7 @@ describe("Pull progression chain shows RR pull exercises in order (Release 2)", 
 // ---------------------------------------------------------------------------
 
 describe("Error: exercise not found when requesting details for an unknown ID", () => {
-  it.skip("findById returns null for an exercise ID that does not exist in the registry", async () => {
+  it("findById returns null for an exercise ID that does not exist in the registry", async () => {
     /**
      * Given Marco attempts to view criteria for an exercise ID that is not in the registry
      * When findById is called with that unknown ID

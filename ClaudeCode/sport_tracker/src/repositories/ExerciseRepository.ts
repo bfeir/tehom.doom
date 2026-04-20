@@ -67,6 +67,10 @@ export class ExerciseRepository implements ExercisePort {
       .maybeSingle();
 
     if (error) {
+      // Invalid UUID format means the ID cannot exist in the registry — treat as not found
+      if (error.message.includes("invalid input syntax for type uuid")) {
+        return null;
+      }
       throw new Error(`ExerciseRepository.findById failed: ${error.message}`);
     }
     if (!data) {
