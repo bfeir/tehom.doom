@@ -93,15 +93,121 @@ export class ProgressionRepository implements ProgressionPort {
   }
 
   async advance(
-    _userId: string,
-    _fromExerciseId: string,
-    _toExerciseId: string,
-    _qualifyingSessionIds: string[]
+    userId: string,
+    fromExerciseId: string,
+    toExerciseId: string,
+    qualifyingSessionIds: string[]
   ): Promise<ProgressionEvent> {
-    throw new Error("Not yet implemented — covered in US-04 steps");
+    // DM3: traceability invariant — must cite qualifying sessions
+    if (qualifyingSessionIds.length === 0) {
+      throw new Error(
+        "DM3 violation: qualifyingSessionIds cannot be empty — advancement requires cited evidence"
+      );
+    }
+
+    // Look up the track from the source exercise
+    const { data: exData, error: exError } = await this.supabaseClient
+      .from("exercises")
+      .select("track")
+      .eq("id", fromExerciseId)
+      .single();
+
+    if (exError) {
+      throw new Error(
+        `ProgressionRepository.advance: exercise lookup failed: ${exError.message}`
+      );
+    }
+    const track = (exData as { track: string }).track;
+
+    // Insert the progression event
+    const { data: eventData, error: eventError } = await this.supabaseClient
+      .from("progression_events")
+      .insert({
+        user_id: userId,
+        from_exercise_id: fromExerciseId,
+        to_exercise_id: toExerciseId,
+        qualifying_session_ids: qualifyingSessionIds,
+      })
+      .select()
+      .single();
+
+    if (eventError) {
+      throw new Error(
+        `ProgressionRepository.advance failed: ${eventError.message}`
+      );
+    }
+
+    // Upsert user_progression to the new exercise
+    const { error: progressionError } = await this.supabaseClient
+      .from("user_progression")
+      .upsert(
+        {
+          user_id: userId,
+          track,
+          current_exercise_id: toExerciseId,
+          updated_at: new Date().toISOString(),
+        },
+        { onConflict: "user_id,track" }
+      );
+
+    if (progressionError) {
+      throw new Error(
+        `ProgressionRepository.advance: progression upsert failed: ${progressionError.message}`
+      );
+    }
+
+    return toProgressionEvent(eventData as ProgressionEventRow);
   }
 
-  async undoLastAdvancement(_userId: string, _track: string): Promise<void> {
-    throw new Error("Not yet implemented — covered in US-04 steps");
+  async undoLastAdvancement(userId: string, track: string): Promise<void> {
+    // Find the most recent progression event for this user
+    const { data: events, error: fetchError } = await this.supabaseClient
+      .from("progression_events")
+      .select("*")
+      .eq("user_id", userId)
+      .order("advanced_at", { ascending: false })
+      .limit(1);
+
+    if (fetchError) {
+      throw new Error(
+        `ProgressionRepository.undoLastAdvancement: fetch failed: ${fetchError.message}`
+      );
+    }
+    if (!events || events.length === 0) {
+      return; // nothing to undo
+    }
+
+    const lastEvent = events[0] as ProgressionEventRow;
+
+    // Delete the progression event
+    const { error: deleteError } = await this.supabaseClient
+      .from("progression_events")
+      .delete()
+      .eq("id", lastEvent.id);
+
+    if (deleteError) {
+      throw new Error(
+        `ProgressionRepository.undoLastAdvancement: delete failed: ${deleteError.message}`
+      );
+    }
+
+    // Revert user_progression to the previous exercise
+    const { error: revertError } = await this.supabaseClient
+      .from("user_progression")
+      .upsert(
+        {
+          user_id: userId,
+          track,
+          current_exercise_id: lastEvent.from_exercise_id,
+          updated_at: new Date().toISOString(),
+        },
+        { onConflict: "user_id,track" }
+      );
+
+    if (revertError) {
+      throw new Error(
+        `ProgressionRepository.undoLastAdvancement: revert failed: ${revertError.message}`
+      );
+    }
   }
 }

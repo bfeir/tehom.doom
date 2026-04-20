@@ -27,7 +27,8 @@ const USER_MARCO = "user-marco-us02";
 const USER_SOFIA = "user-sofia-us02";
 const USER_TOMAS = "user-tomas-us02";
 let PIKE_PUSH_UP_ID = "exercise-pike-push-up";
-const FEET_ELEVATED_PPP_ID = "exercise-feet-elevated-ppp";
+let FEET_ELEVATED_PPP_ID = ""; // populated in beforeAll — next exercise in push chain
+let sofiaSessionIds: string[] = []; // populated in beforeAll — real session UUIDs
 
 beforeAll(async () => {
   const supabaseAdmin = createClient(
@@ -41,6 +42,13 @@ beforeAll(async () => {
 
   const exercises = await exerciseRepo.search("pike");
   PIKE_PUSH_UP_ID = exercises[0].id;
+
+  // Resolve the next exercise in the push chain (used in advancement tests)
+  const pushChain = await exerciseRepo.findProgressionChain("push");
+  const pikeIndex = pushChain.findIndex((ex) => ex.id === PIKE_PUSH_UP_ID);
+  if (pikeIndex >= 0 && pikeIndex + 1 < pushChain.length) {
+    FEET_ELEVATED_PPP_ID = pushChain[pikeIndex + 1].id;
+  }
 
   // Seed: 1 qualifying session for USER_MARCO (Pike Push-up, 3×8 form 4/5)
   const s = await sessionPort.create(USER_MARCO);
@@ -92,6 +100,9 @@ beforeAll(async () => {
     rpe: null,
   });
   await sessionPort.close(s2.id);
+
+  // Store real session IDs for advancement tests (DM3 traceability)
+  sofiaSessionIds = [s1.id, s2.id];
 });
 
 afterAll(async () => {
@@ -103,6 +114,15 @@ afterAll(async () => {
     .from("sessions")
     .delete()
     .in("user_id", [USER_MARCO, USER_SOFIA, USER_TOMAS]);
+  // Clean up progression artifacts created by advancement tests
+  await supabaseAdmin
+    .from("progression_events")
+    .delete()
+    .in("user_id", [USER_MARCO, USER_SOFIA, USER_TOMAS]);
+  await supabaseAdmin
+    .from("user_progression")
+    .delete()
+    .in("user_id", [USER_SOFIA]);
 });
 
 // ---------------------------------------------------------------------------
@@ -226,12 +246,12 @@ describe("Full rationale accordion shows session evidence with RR wiki attributi
 // ---------------------------------------------------------------------------
 
 describe("Advancing to the next exercise records the progression with cited evidence", () => {
-  it.skip("records a progression event citing the qualifying sessions when user advances", async () => {
+  it("records a progression event citing the qualifying sessions when user advances", async () => {
     /**
      * Given Sofia sees a READY signal for Pike Push-up
      * And she taps "Advance to Feet Elevated PPP"
      * When the advancement is confirmed
-     * Then her current push exercise becomes "Feet Elevated PPP"
+     * Then her current push exercise becomes the next exercise in the chain
      * And a progression event is recorded with today's date
      * And the event cites the qualifying session IDs that earned the advancement (DM3)
      */
@@ -239,7 +259,7 @@ describe("Advancing to the next exercise records the progression with cited evid
       USER_SOFIA,
       PIKE_PUSH_UP_ID,
       FEET_ELEVATED_PPP_ID,
-      ["session-id-1", "session-id-2"]
+      sofiaSessionIds
     );
 
     expect(event.fromExerciseId).toBe(PIKE_PUSH_UP_ID);
@@ -248,7 +268,7 @@ describe("Advancing to the next exercise records the progression with cited evid
     expect(event.advancedAt).toBeInstanceOf(Date);
   });
 
-  it.skip("reverts the advancement when user taps undo within 5 seconds", async () => {
+  it("reverts the advancement when user taps undo within 5 seconds", async () => {
     /**
      * Given Sofia has just advanced to Feet Elevated PPP and the undo window is open
      * When she taps Undo within 5 seconds of advancing
@@ -362,7 +382,7 @@ describe("Error: readiness signal when history is insufficient", () => {
     expect(signal).toBeNull();
   });
 
-  it.skip("advancement is rejected when qualifying session IDs are empty", async () => {
+  it("advancement is rejected when qualifying session IDs are empty", async () => {
     /**
      * Given a progression advancement is attempted without citing any qualifying sessions
      * When the advance command is called with an empty qualifying session list
