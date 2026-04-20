@@ -138,7 +138,7 @@ describe("Plateau warning fires after 3 consecutive sessions with no rep increas
 // ---------------------------------------------------------------------------
 
 describe("No plateau warning fires when reps are increasing normally", () => {
-  it.skip("returns null when rep counts are increasing across consecutive sessions", () => {
+  it("returns null when rep counts are increasing across consecutive sessions", () => {
     /**
      * Given Marco's pike push-up reps have been 6, 7, 7, 8 across 4 sessions
      * (upward trend present — rep increased from session 1 to session 4)
@@ -157,7 +157,7 @@ describe("No plateau warning fires when reps are increasing normally", () => {
     expect(warning).toBeNull();
   });
 
-  it.skip("returns null when fewer than 3 sessions have been logged for the exercise", () => {
+  it("returns null when fewer than 3 sessions have been logged for the exercise", () => {
     /**
      * Given a user has only 2 sessions logged for Pike Push-up
      * When plateau detection runs
@@ -237,7 +237,7 @@ describe("Plateau detection is stateless and recomputed from history each time",
 // ---------------------------------------------------------------------------
 
 describe("Error: plateau detection handles empty session history gracefully", () => {
-  it.skip("returns null when no sessions have been logged for the exercise", () => {
+  it("returns null when no sessions have been logged for the exercise", () => {
     /**
      * Given a brand-new user has never logged a session for any exercise
      * When plateau detection is called with an empty session list
@@ -250,7 +250,7 @@ describe("Error: plateau detection handles empty session history gracefully", ()
 });
 
 describe("Error: a single rep increase breaks a plateau streak and resets the count", () => {
-  it.skip("does not fire warning when the most recent session shows a rep increase after a flat run", () => {
+  it("does not fire warning when the most recent session shows a rep increase after a flat run", () => {
     /**
      * Given Sofia had 2 flat sessions at 5 reps (not yet triggering plateau)
      * And her latest session shows 6 reps (an increase)
