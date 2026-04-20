@@ -161,9 +161,10 @@ Deno.serve(async (req: Request) => {
       }
     }
 
-    // 5. Build form score history from qualifying sessions (chronological, last N)
+    // 5. Build form score history from all relevant sessions (chronological, last 5)
+    // Includes non-qualifying sessions to reflect the full form history for REVIEW detection
     const qualifyingSessions = relevantSessions.filter(isQualifying);
-    const formScoreHistory = qualifyingSessions.slice(-5).map((session) => {
+    const formScoreHistory = relevantSessions.slice(-5).map((session) => {
       const entry = session.entries.find((e: ExerciseEntry) => e.exerciseId === exerciseId);
       return entry?.formQuality ?? null;
     });
@@ -174,6 +175,7 @@ Deno.serve(async (req: Request) => {
     if (streak >= criterion.consecutiveSessions) {
       state = "READY";
     } else {
+      // Check for REVIEW: form quality range ≥ 2 across last 3 relevant sessions
       const last3Forms = formScoreHistory.slice(-3).filter((f): f is number => f !== null);
       const formRange = last3Forms.length >= 2
         ? Math.max(...last3Forms) - Math.min(...last3Forms)
@@ -201,6 +203,10 @@ Deno.serve(async (req: Request) => {
       }
     }
 
+    const criterionSummary = state === "REVIEW"
+      ? "Form scores vary across recent sessions — focus on technique consistency before advancing"
+      : `${criterion.targetSets}×${criterion.targetReps} at form ≥${criterion.minFormQuality}/5 for ${criterion.consecutiveSessions} consecutive sessions`;
+
     const signal: ReadinessSignal = {
       state,
       criterion: {
@@ -212,7 +218,7 @@ Deno.serve(async (req: Request) => {
       nextExerciseId,
       nextExerciseName,
       formScoreHistory,
-      criterionSummary: `${criterion.targetSets}×${criterion.targetReps} at form ≥${criterion.minFormQuality}/5 for ${criterion.consecutiveSessions} consecutive sessions`,
+      criterionSummary,
       rrWikiUrl,
     };
 

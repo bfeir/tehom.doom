@@ -54,6 +54,22 @@ beforeAll(async () => {
   });
   await sessionPort.close(s.id);
 
+  // Seed: 4 sessions for USER_TOMAS with form variance across relevant sessions (range ≥ 2 → REVIEW)
+  // Form scores: 3, 4, 2, 4 → range = 4 − 2 = 2, triggering REVIEW
+  // Note: form=2 session is non-qualifying (below minFormQuality=3) so streak resets, preventing READY
+  for (const [reps, form] of [[8, 3], [8, 4], [8, 2], [9, 4]] as [number, number][]) {
+    const st = await sessionPort.create(USER_TOMAS);
+    await sessionPort.addEntry(st.id, {
+      exerciseId: PIKE_PUSH_UP_ID,
+      exerciseName: "Pike Push-up (PPP progression)",
+      sets: 3,
+      reps,
+      formQuality: form,
+      rpe: null,
+    });
+    await sessionPort.close(st.id);
+  }
+
   // Seed: 2 consecutive qualifying sessions for USER_SOFIA (Pike Push-up)
   const s1 = await sessionPort.create(USER_SOFIA);
   await sessionPort.addEntry(s1.id, {
@@ -164,7 +180,7 @@ describe("READY signal appears when the advancement criterion is fully met", () 
 // ---------------------------------------------------------------------------
 
 describe("REVIEW signal explains form variance without judging the practitioner", () => {
-  it.skip("shows REVIEW RECOMMENDED when form quality range across last 3 qualifying sessions is 2 or more", async () => {
+  it("shows REVIEW RECOMMENDED when form quality range across last 3 qualifying sessions is 2 or more", async () => {
     /**
      * Given Tomás's last 4 sessions for Pike Push-up have form scores 3, 4, 2, 4
      * (range = 4 − 2 = 2, triggering REVIEW)
@@ -363,7 +379,7 @@ describe("Error: readiness signal when history is insufficient", () => {
     ).rejects.toThrow();
   });
 
-  it.skip("REVIEW signal copy is informative and not punitive", async () => {
+  it("REVIEW signal copy is informative and not punitive", async () => {
     /**
      * Given Tomás receives a REVIEW signal due to form variance
      * When he reads the signal card
