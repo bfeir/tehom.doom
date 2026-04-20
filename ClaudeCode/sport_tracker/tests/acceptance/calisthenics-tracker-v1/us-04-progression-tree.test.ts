@@ -235,7 +235,7 @@ describe("Error: exercise not found when requesting details for an unknown ID", 
 });
 
 describe("Error: progression tree shows no current position for a user with no progression state", () => {
-  it.skip("getCurrentProgression returns null for a new user who has not yet set a current exercise", async () => {
+  it("getCurrentProgression returns null for a new user who has not yet set a current exercise", async () => {
     /**
      * Given a new user has just signed up and has not selected a current exercise
      * When the progression tree attempts to highlight their current position
@@ -251,7 +251,7 @@ describe("Error: progression tree shows no current position for a user with no p
 });
 
 describe("Error: progression history is empty for a user who has never advanced", () => {
-  it.skip("findHistory returns an empty list for a user who has never advanced exercises", async () => {
+  it("findHistory returns an empty list for a user who has never advanced exercises", async () => {
     /**
      * Given Marco is a new user who has only logged sessions but never advanced
      * When the progression history for the push track is requested
@@ -267,7 +267,7 @@ describe("Error: progression history is empty for a user who has never advanced"
 });
 
 describe("Error: advancement rejected when qualifying session IDs are not provided", () => {
-  it.skip("advance command rejects when no qualifying sessions are cited (DM3 invariant)", async () => {
+  it("advance command rejects when no qualifying sessions are cited (DM3 invariant)", async () => {
     /**
      * Given a progression advancement is attempted without citing qualifying sessions
      * When the advance command is submitted
