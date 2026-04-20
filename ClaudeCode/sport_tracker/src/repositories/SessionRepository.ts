@@ -167,6 +167,7 @@ export class SessionRepository implements SessionPort {
     exerciseId: string | null,
     limit = 10
   ): Promise<Session[]> {
+    // Fetch most-recent sessions first so we can apply the limit before reversing
     const { data, error } = await this.supabaseClient
       .from("sessions")
       .select()
@@ -182,6 +183,7 @@ export class SessionRepository implements SessionPort {
       ? data
       : data.filter((row) => row.entries.some((e) => e.exerciseId === exerciseId));
 
-    return filtered.slice(0, limit).map(rowToSession);
+    // Take the most-recent `limit` entries, then reverse to chronological (ascending) order
+    return filtered.slice(0, limit).reverse().map(rowToSession);
   }
 }

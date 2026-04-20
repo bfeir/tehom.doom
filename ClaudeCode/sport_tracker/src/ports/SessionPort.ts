@@ -1,7 +1,4 @@
 // SessionPort — driving port interface for session management
-// Scaffold — RED phase.
-
-export const __SCAFFOLD__ = true;
 
 import type { Session, ExerciseEntry } from "../types/index.js";
 
