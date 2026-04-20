@@ -11,9 +11,11 @@
 
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
 import type { SessionPort } from "../../../src/ports/SessionPort.js";
+import type { HistoryService } from "../../../src/services/HistoryService.js";
 
 // TODO (software-crafter): inject real or in-memory adapters here.
 let sessionPort: SessionPort;
+let historyService: HistoryService;
 
 // Supabase admin client for cleanup
 let supabaseAdmin: Awaited<ReturnType<typeof import("@supabase/supabase-js")["createClient"]>>;
@@ -21,14 +23,16 @@ let supabaseAdmin: Awaited<ReturnType<typeof import("@supabase/supabase-js")["cr
 const USER_MARCO = "user-marco-us03";
 const USER_TOMAS = "user-tomas-us03";
 const USER_SOFIA = "user-sofia-us03";
+const USER_FREE_TIER = "user-free-tier-old-sessions-us03";
 let PIKE_PUSH_UP_ID = "exercise-pike-push-up";
-const AUSTRALIAN_ROWS_ID = "exercise-australian-rows";
+let AUSTRALIAN_ROWS_ID = "exercise-australian-rows";
 
 const TEST_USERS_US03 = [
   USER_MARCO,
   USER_TOMAS,
   USER_SOFIA,
   "user-new-2-sessions-us03",
+  USER_FREE_TIER,
 ];
 
 beforeAll(async () => {
@@ -38,6 +42,9 @@ beforeAll(async () => {
   );
   const { SessionRepository } = await import(
     "../../../src/repositories/SessionRepository.js"
+  );
+  const { HistoryService: HistoryServiceImpl } = await import(
+    "../../../src/services/HistoryService.js"
   );
 
   const supabaseUrl = process.env["SUPABASE_URL"];
@@ -50,12 +57,48 @@ beforeAll(async () => {
   }
 
   supabaseAdmin = createClient(supabaseUrl, supabaseServiceRoleKey);
-  sessionPort = new SessionRepository(supabaseAdmin, false);
+  const sessionRepo = new SessionRepository(supabaseAdmin, false);
+  sessionPort = sessionRepo;
+  historyService = new HistoryServiceImpl(sessionRepo);
 
   // Resolve real Pike Push-up ID from the registry
   const exerciseRepo = new ExerciseRepository(supabaseAdmin);
   const pikeResults = await exerciseRepo.search("pike");
   PIKE_PUSH_UP_ID = pikeResults[0].id;
+
+  // Resolve or create Australian Rows exercise for 03-7 (flat trend)
+  const rowsResults = await exerciseRepo.search("rows");
+  const australianRows = rowsResults.find((e) =>
+    e.name.toLowerCase().includes("australian")
+  );
+  if (australianRows) {
+    AUSTRALIAN_ROWS_ID = australianRows.id;
+  } else {
+    // Insert a test exercise for Australian Rows if not in seed
+    const { data: inserted, error: insertError } = await supabaseAdmin
+      .from("exercises")
+      .insert({
+        slug: "australian-rows-test",
+        name: "Australian Rows",
+        track: "pull",
+        chain_order: 1,
+        rr_criteria: JSON.stringify({
+          targetReps: 10,
+          targetSets: 3,
+          minFormQuality: 3,
+          consecutiveSessions: 2,
+        }),
+        rr_wiki_url:
+          "https://www.reddit.com/r/bodyweightfitness/wiki/kb/recommended_routine",
+        version_tag: "rr-2024",
+      })
+      .select("id")
+      .single();
+    if (insertError) {
+      throw new Error(`Failed to insert Australian Rows exercise: ${insertError.message}`);
+    }
+    AUSTRALIAN_ROWS_ID = inserted.id;
+  }
 
   // Clean up any leftover data from previous test runs
   await supabaseAdmin.from("sessions").delete().in("user_id", TEST_USERS_US03);
@@ -107,6 +150,36 @@ beforeAll(async () => {
     const loggedAt = new Date();
     loggedAt.setDate(loggedAt.getDate() - (2 - i));
     await seedPikeSession("user-new-2-sessions-us03", 6 + i, 3, loggedAt);
+  }
+
+  // Seed sessions for 03-6: free-tier 30-day limit
+  // 3 sessions: -35 days (outside window), -20 days (inside), today (inside)
+  const freeTierDaysAgo = [35, 20, 0];
+  for (const daysAgo of freeTierDaysAgo) {
+    const loggedAt = new Date();
+    loggedAt.setDate(loggedAt.getDate() - daysAgo);
+    await seedPikeSession(USER_FREE_TIER, 8, 3, loggedAt);
+  }
+
+  // Seed sessions for 03-7: flat trend — 5 Australian Rows sessions all at reps=5
+  for (let i = 0; i < 5; i++) {
+    const loggedAt = new Date();
+    loggedAt.setDate(loggedAt.getDate() - (5 - i));
+    await supabaseAdmin.from("sessions").insert({
+      user_id: USER_SOFIA,
+      entries: [
+        {
+          exerciseId: AUSTRALIAN_ROWS_ID,
+          exerciseName: "Australian Rows",
+          sets: 3,
+          reps: 5,
+          formQuality: 3,
+          rpe: null,
+        },
+      ],
+      is_open: false,
+      logged_at: loggedAt.toISOString(),
+    });
   }
 });
 
@@ -237,7 +310,7 @@ describe("Progress history is accessible from the readiness card and from the se
 // ---------------------------------------------------------------------------
 
 describe("Error: history view returns an empty list for a new exercise with no sessions", () => {
-  it.skip("returns an empty list when the user has never logged the exercise", async () => {
+  it("returns an empty list when the user has never logged the exercise", async () => {
     /**
      * Given Marco has never logged Australian Rows
      * When he views the history for Australian Rows
@@ -255,21 +328,21 @@ describe("Error: history view returns an empty list for a new exercise with no s
 });
 
 describe("Error: free-tier history is limited to the last 30 days", () => {
-  it.skip("sessions older than 30 days are not returned for a free-tier user", async () => {
+  it("sessions older than 30 days are not returned for a free-tier user", async () => {
     /**
      * Given a free-tier user logged sessions 35 days ago, 20 days ago, and today
-     * When they view their progress history
+     * When they view their progress history via HistoryService with plan='free'
      * Then only sessions within the last 30 days are returned (20 days ago + today)
      * And the 35-day-old session is not included
      *
      * Note: free-tier filter is applied at the service layer (SD5 paywall gating).
      * This test validates the data boundary, not the UI paywall prompt.
      */
-    // Software-crafter: set up test user with sessions at -35d, -20d, 0d
-    const sessions = await sessionPort.findByUserAndExercise(
-      "user-free-tier-old-sessions-us03",
+    const sessions = await historyService.findHistory(
+      USER_FREE_TIER,
       PIKE_PUSH_UP_ID,
-      10
+      10,
+      "free"
     );
 
     // Only sessions within 30-day window should appear
@@ -284,7 +357,7 @@ describe("Error: free-tier history is limited to the last 30 days", () => {
 });
 
 describe("Error: flat trend visible in history data for plateau detection precondition", () => {
-  it.skip("5 sessions with identical rep counts show a flat trend in the returned data", async () => {
+  it("5 sessions with identical rep counts show a flat trend in the returned data", async () => {
     /**
      * Given Sofia has logged 5 consecutive Australian rows sessions all at 3×5
      * When she views the history for Australian rows
