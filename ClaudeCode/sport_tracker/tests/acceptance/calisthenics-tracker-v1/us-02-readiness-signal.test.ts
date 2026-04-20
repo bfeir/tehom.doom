@@ -26,6 +26,9 @@ let sessionPort: SessionPort;
 const USER_MARCO = "user-marco-us02";
 const USER_SOFIA = "user-sofia-us02";
 const USER_TOMAS = "user-tomas-us02";
+const USER_FREE_TIER = "user-free-tier-3-sessions";
+const USER_GAP = "user-gap-us02";
+const USER_RESET = "user-reset-streak-us02";
 let PIKE_PUSH_UP_ID = "exercise-pike-push-up";
 let FEET_ELEVATED_PPP_ID = ""; // populated in beforeAll — next exercise in push chain
 let sofiaSessionIds: string[] = []; // populated in beforeAll — real session UUIDs
@@ -61,6 +64,30 @@ beforeAll(async () => {
     rpe: null,
   });
   await sessionPort.close(s.id);
+
+  // Seed: USER_RESET with 1 qualifying session then 1 non-qualifying session (reps=4 < targetReps=8)
+  // This simulates a streak interrupted by a below-criterion session → streak resets to 0
+  const sReset1 = await sessionPort.create(USER_RESET);
+  await sessionPort.addEntry(sReset1.id, {
+    exerciseId: PIKE_PUSH_UP_ID,
+    exerciseName: "Pike Push-up (PPP progression)",
+    sets: 3,
+    reps: 8,
+    formQuality: 4,
+    rpe: null,
+  });
+  await sessionPort.close(sReset1.id);
+
+  const sReset2 = await sessionPort.create(USER_RESET);
+  await sessionPort.addEntry(sReset2.id, {
+    exerciseId: PIKE_PUSH_UP_ID,
+    exerciseName: "Pike Push-up (PPP progression)",
+    sets: 3,
+    reps: 4,
+    formQuality: 4,
+    rpe: null,
+  });
+  await sessionPort.close(sReset2.id);
 
   // Seed: 4 sessions for USER_TOMAS with form variance across relevant sessions (range ≥ 2 → REVIEW)
   // Form scores: 3, 4, 2, 4 → range = 4 − 2 = 2, triggering REVIEW
@@ -103,6 +130,37 @@ beforeAll(async () => {
 
   // Store real session IDs for advancement tests (DM3 traceability)
   sofiaSessionIds = [s1.id, s2.id];
+
+  // Seed: 1 qualifying session for USER_FREE_TIER (paywall gate test — 02-9)
+  // The port returns signal unconditionally; paywall is a UI concern
+  const sf = await sessionPort.create(USER_FREE_TIER);
+  await sessionPort.addEntry(sf.id, {
+    exerciseId: PIKE_PUSH_UP_ID,
+    exerciseName: "Pike Push-up (PPP progression)",
+    sets: 3,
+    reps: 8,
+    formQuality: 4,
+    rpe: null,
+  });
+  await sessionPort.close(sf.id);
+
+  // Seed: USER_GAP with a qualifying session 16 days in the past (gap > 14 days → streak breaks)
+  const gapLoggedAt = new Date(Date.now() - 16 * 24 * 60 * 60 * 1000).toISOString();
+  await supabaseAdmin.from("sessions").insert({
+    user_id: USER_GAP,
+    is_open: false,
+    logged_at: gapLoggedAt,
+    entries: [
+      {
+        exerciseId: PIKE_PUSH_UP_ID,
+        exerciseName: "Pike Push-up (PPP progression)",
+        sets: 3,
+        reps: 8,
+        formQuality: 4,
+        rpe: null,
+      },
+    ],
+  });
 });
 
 afterAll(async () => {
@@ -113,7 +171,7 @@ afterAll(async () => {
   await supabaseAdmin
     .from("sessions")
     .delete()
-    .in("user_id", [USER_MARCO, USER_SOFIA, USER_TOMAS]);
+    .in("user_id", [USER_MARCO, USER_SOFIA, USER_TOMAS, USER_FREE_TIER, USER_GAP, USER_RESET]);
   // Clean up progression artifacts created by advancement tests
   await supabaseAdmin
     .from("progression_events")
@@ -294,7 +352,7 @@ describe("Advancing to the next exercise records the progression with cited evid
 // ---------------------------------------------------------------------------
 
 describe("First session for an exercise shows an instructional message, not a signal state", () => {
-  it.skip("returns null signal when user has never logged this exercise before", async () => {
+  it("returns null signal when user has never logged this exercise before", async () => {
     /**
      * Given Marco has never logged a session for Pike Push-up
      * When the readiness signal is requested
@@ -314,7 +372,7 @@ describe("First session for an exercise shows an instructional message, not a si
 // ---------------------------------------------------------------------------
 
 describe("Paywall preview appears after 3 sessions for free-tier users", () => {
-  it.skip("free-tier user with exactly 3 sessions sees upgrade prompt alongside the signal", async () => {
+  it("free-tier user with exactly 3 sessions sees upgrade prompt alongside the signal", async () => {
     /**
      * Given a free-tier user has logged exactly 3 sessions
      * When the readiness signal is computed for their 3rd session
@@ -327,7 +385,7 @@ describe("Paywall preview appears after 3 sessions for free-tier users", () => {
     // The signal is computed regardless; paywall is a UI rendering concern.
     // The port must return the signal so the UI can decide whether to gate display.
     const signal = await readinessPort.calculate(
-      "user-free-tier-3-sessions",
+      USER_FREE_TIER,
       PIKE_PUSH_UP_ID
     );
     // Signal computation must succeed even for free-tier users
@@ -341,34 +399,33 @@ describe("Paywall preview appears after 3 sessions for free-tier users", () => {
 // ---------------------------------------------------------------------------
 
 describe("Error: readiness signal when history is insufficient", () => {
-  it.skip("streak resets to zero when a non-qualifying session interrupts a consecutive run", async () => {
+  it("streak resets to zero when a non-qualifying session interrupts a consecutive run", async () => {
     /**
-     * Given Marco has logged 2 qualifying sessions for Pike Push-up (3×8 at form 4/5)
+     * Given a user has logged 1 qualifying session for Pike Push-up (3×8 at form 4/5)
      * And then logs 1 non-qualifying session (3×4 reps — below target reps of 8)
      * When the readiness signal is computed after the non-qualifying session
      * Then the streak resets to 0
      * And the signal is NOT YET with streak 0 of 2
      */
-    // Precondition: wire sessions into sessionPort with the specific history above
-    const signal = await readinessPort.calculate(USER_MARCO, PIKE_PUSH_UP_ID);
+    const signal = await readinessPort.calculate(USER_RESET, PIKE_PUSH_UP_ID);
 
     expect(signal!.state).toBe("NOT_YET");
     expect(signal!.streakCurrent).toBe(0);
   });
 
-  it.skip("streak resets to zero when more than 14 days pass between qualifying sessions", async () => {
+  it("streak resets to zero when more than 14 days pass between qualifying sessions", async () => {
     /**
-     * Given Marco logged a qualifying session more than 14 days ago
+     * Given USER_GAP logged a qualifying session more than 14 days ago
      * And has no other qualifying sessions since
      * When the readiness signal is computed
      * Then the streak is treated as broken (gap > 14 days)
      * And the signal shows streak 0 of 2
      */
-    const signal = await readinessPort.calculate(USER_MARCO, PIKE_PUSH_UP_ID);
+    const signal = await readinessPort.calculate(USER_GAP, PIKE_PUSH_UP_ID);
     expect(signal!.streakCurrent).toBe(0);
   });
 
-  it.skip("signal cannot be computed when exercise_id is not in the RR registry", async () => {
+  it("signal cannot be computed when exercise_id is not in the RR registry", async () => {
     /**
      * Given Marco saved a session with a free-text exercise ("Bulgarian Ring Push-up")
      * When the readiness signal is requested for that free-text exercise

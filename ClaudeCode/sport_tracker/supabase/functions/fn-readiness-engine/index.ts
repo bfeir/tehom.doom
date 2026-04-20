@@ -61,6 +61,14 @@ Deno.serve(async (req: Request) => {
     );
   }
 
+  // If exerciseId is not a valid UUID, it cannot exist in the exercises table
+  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  if (!uuidRegex.test(exerciseId)) {
+    return new Response(JSON.stringify(null), {
+      headers: { "Content-Type": "application/json" },
+    });
+  }
+
   // Use DB_URL (custom env) with fallback to SUPABASE_DB_URL (available in deployed EFs)
   const dbUrl = Deno.env.get("DB_URL") ?? Deno.env.get("SUPABASE_DB_URL");
   if (!dbUrl) {
@@ -141,23 +149,29 @@ Deno.serve(async (req: Request) => {
 
     const GAP_LIMIT_MS = 14 * 24 * 60 * 60 * 1000; // 14 days in milliseconds
 
-    let streak = 0;
-    for (let i = relevantSessions.length - 1; i >= 0; i--) {
-      const session = relevantSessions[i];
+    // Staleness check: if the most recent session is older than 14 days, streak is broken
+    const mostRecentSession = relevantSessions[relevantSessions.length - 1];
+    const mostRecentAge = Date.now() - new Date(mostRecentSession.logged_at).getTime();
 
-      // Check gap to previous session
-      if (i < relevantSessions.length - 1) {
-        const current = new Date(session.logged_at).getTime();
-        const next = new Date(relevantSessions[i + 1].logged_at).getTime();
-        if (next - current > GAP_LIMIT_MS) {
+    let streak = 0;
+    if (mostRecentAge <= GAP_LIMIT_MS) {
+      for (let i = relevantSessions.length - 1; i >= 0; i--) {
+        const session = relevantSessions[i];
+
+        // Check gap to previous session
+        if (i < relevantSessions.length - 1) {
+          const current = new Date(session.logged_at).getTime();
+          const next = new Date(relevantSessions[i + 1].logged_at).getTime();
+          if (next - current > GAP_LIMIT_MS) {
+            break;
+          }
+        }
+
+        if (isQualifying(session)) {
+          streak++;
+        } else {
           break;
         }
-      }
-
-      if (isQualifying(session)) {
-        streak++;
-      } else {
-        break;
       }
     }
 
