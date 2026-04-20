@@ -207,7 +207,7 @@ describe("Plateau warning card shows raw trend data with dates and an actionable
 // ---------------------------------------------------------------------------
 
 describe("Plateau detection is stateless and recomputed from history each time", () => {
-  it.skip("detector returns a warning every time it is called with flat session data, regardless of prior dismiss actions", () => {
+  it("detector returns a warning every time it is called with flat session data, regardless of prior dismiss actions", () => {
     /**
      * Given Tomás dismissed a plateau warning for pike push-ups last week
      * And his reps are still flat (7, 7, 7) in the new session history
