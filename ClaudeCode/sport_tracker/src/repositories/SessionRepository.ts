@@ -155,11 +155,15 @@ export class SessionRepository implements SessionPort {
   }
 
   private async isRemoteNewer(session: Session): Promise<boolean> {
-    const { data: existing } = await this.supabaseClient
+    const { data: existing, error } = await this.supabaseClient
       .from("sessions")
       .select("logged_at")
       .eq("id", session.id)
       .maybeSingle<Pick<SessionRow, "logged_at">>();
+
+    if (error && (error as { code?: string }).code !== "PGRST116") {
+      throw new Error(`SessionRepository.isRemoteNewer failed: ${error.message}`);
+    }
 
     return existing !== null && new Date(existing.logged_at) >= session.loggedAt;
   }

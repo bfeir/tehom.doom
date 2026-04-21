@@ -16,6 +16,8 @@ export class PlateauDetector {
    * Returns a PlateauWarning when 3 or more consecutive trailing sessions
    * show no rep improvement (flat or declining). Returns null otherwise.
    *
+   * Sessions do not need to be pre-sorted — they are sorted internally by loggedAt ascending.
+   *
    * This is a pure function — no I/O, no side effects.
    */
   detect(

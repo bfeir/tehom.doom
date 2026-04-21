@@ -52,7 +52,18 @@ Deno.serve(async (req: Request) => {
     });
   }
 
-  const { userId, exerciseId } = await req.json() as { userId: string; exerciseId: string };
+  let userId: string;
+  let exerciseId: string;
+  try {
+    const body = await req.json() as { userId: string; exerciseId: string };
+    userId = body.userId;
+    exerciseId = body.exerciseId;
+  } catch {
+    return new Response(
+      JSON.stringify({ error: "Invalid JSON body" }),
+      { status: 400, headers: { "Content-Type": "application/json" } }
+    );
+  }
 
   if (!userId || !exerciseId) {
     return new Response(

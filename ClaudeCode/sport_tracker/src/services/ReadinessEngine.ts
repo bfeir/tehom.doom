@@ -12,6 +12,9 @@ export class ReadinessEngine implements ReadinessPort {
     userId: string,
     exerciseId: string
   ): Promise<ReadinessSignal | null> {
+    if (!userId || !exerciseId) {
+      throw new Error("ReadinessEngine.calculate: userId and exerciseId are required");
+    }
     const { data, error } = await this.supabaseClient.functions.invoke(
       "fn-readiness-engine",
       { body: { userId, exerciseId } }
