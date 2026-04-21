@@ -53,6 +53,21 @@ function toExercise(row: ExerciseRow): Exercise {
 }
 
 // ---------------------------------------------------------------------------
+// Constants
+// ---------------------------------------------------------------------------
+
+const INVALID_UUID_ERROR = "invalid input syntax for type uuid";
+
+const SEARCH_ALIASES: Record<string, string> = {
+  "pike pushup": "pike push-up",
+  "ppp progression": "pike push-up",
+  "knee pushup": "knee push-up",
+  "wall pushup": "wall push-up",
+  "regular pushup": "regular push-up",
+  "diamond pushup": "diamond push-up",
+};
+
+// ---------------------------------------------------------------------------
 // Repository
 // ---------------------------------------------------------------------------
 
@@ -67,8 +82,7 @@ export class ExerciseRepository implements ExercisePort {
       .maybeSingle();
 
     if (error) {
-      // Invalid UUID format means the ID cannot exist in the registry — treat as not found
-      if (error.message.includes("invalid input syntax for type uuid")) {
+      if (error.message.includes(INVALID_UUID_ERROR)) {
         return null;
       }
       throw new Error(`ExerciseRepository.findById failed: ${error.message}`);
@@ -93,16 +107,8 @@ export class ExerciseRepository implements ExercisePort {
   }
 
   private normalizeQuery(query: string): string {
-    const aliases: Record<string, string> = {
-      "pike pushup": "pike push-up",
-      "ppp progression": "pike push-up",
-      "knee pushup": "knee push-up",
-      "wall pushup": "wall push-up",
-      "regular pushup": "regular push-up",
-      "diamond pushup": "diamond push-up",
-    };
-    const lower = query.toLowerCase().trim();
-    return aliases[lower] ?? query;
+    const normalized = query.toLowerCase().trim();
+    return SEARCH_ALIASES[normalized] ?? query;
   }
 
   async search(query: string): Promise<Exercise[]> {

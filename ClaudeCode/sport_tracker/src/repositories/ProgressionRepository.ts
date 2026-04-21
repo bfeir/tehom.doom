@@ -78,6 +78,7 @@ export class ProgressionRepository implements ProgressionPort {
 
   async findHistory(
     userId: string,
+    // track filtering is not yet applied at DB level — full history returned and filtered by caller
     _track: string
   ): Promise<ProgressionEvent[]> {
     const { data, error } = await this.supabaseClient
@@ -98,29 +99,41 @@ export class ProgressionRepository implements ProgressionPort {
     toExerciseId: string,
     qualifyingSessionIds: string[]
   ): Promise<ProgressionEvent> {
-    // DM3: traceability invariant — must cite qualifying sessions
     if (qualifyingSessionIds.length === 0) {
       throw new Error(
         "DM3 violation: qualifyingSessionIds cannot be empty — advancement requires cited evidence"
       );
     }
 
-    // Look up the track from the source exercise
-    const { data: exData, error: exError } = await this.supabaseClient
+    const track = await this.resolveTrack(fromExerciseId);
+    const event = await this.insertProgressionEvent(userId, fromExerciseId, toExerciseId, qualifyingSessionIds);
+    await this.upsertUserProgression(userId, track, toExerciseId);
+
+    return toProgressionEvent(event as ProgressionEventRow);
+  }
+
+  private async resolveTrack(exerciseId: string): Promise<string> {
+    const { data, error } = await this.supabaseClient
       .from("exercises")
       .select("track")
-      .eq("id", fromExerciseId)
+      .eq("id", exerciseId)
       .single();
 
-    if (exError) {
+    if (error) {
       throw new Error(
-        `ProgressionRepository.advance: exercise lookup failed: ${exError.message}`
+        `ProgressionRepository.advance: exercise lookup failed: ${error.message}`
       );
     }
-    const track = (exData as { track: string }).track;
+    return (data as { track: string }).track;
+  }
 
-    // Insert the progression event
-    const { data: eventData, error: eventError } = await this.supabaseClient
+  private async insertProgressionEvent(
+    userId: string,
+    fromExerciseId: string,
+    toExerciseId: string,
+    qualifyingSessionIds: string[]
+  ) {
+    const { data, error } = await this.supabaseClient
       .from("progression_events")
       .insert({
         user_id: userId,
@@ -131,82 +144,75 @@ export class ProgressionRepository implements ProgressionPort {
       .select()
       .single();
 
-    if (eventError) {
+    if (error) {
       throw new Error(
-        `ProgressionRepository.advance failed: ${eventError.message}`
+        `ProgressionRepository.advance failed: ${error.message}`
       );
     }
+    return data;
+  }
 
-    // Upsert user_progression to the new exercise
-    const { error: progressionError } = await this.supabaseClient
+  private async upsertUserProgression(
+    userId: string,
+    track: string,
+    currentExerciseId: string
+  ): Promise<void> {
+    const { error } = await this.supabaseClient
       .from("user_progression")
       .upsert(
         {
           user_id: userId,
           track,
-          current_exercise_id: toExerciseId,
+          current_exercise_id: currentExerciseId,
           updated_at: new Date().toISOString(),
         },
         { onConflict: "user_id,track" }
       );
 
-    if (progressionError) {
+    if (error) {
       throw new Error(
-        `ProgressionRepository.advance: progression upsert failed: ${progressionError.message}`
+        `ProgressionRepository.advance: progression upsert failed: ${error.message}`
       );
     }
-
-    return toProgressionEvent(eventData as ProgressionEventRow);
   }
 
   async undoLastAdvancement(userId: string, track: string): Promise<void> {
-    // Find the most recent progression event for this user
-    const { data: events, error: fetchError } = await this.supabaseClient
+    const lastEvent = await this.fetchMostRecentEvent(userId);
+    if (!lastEvent) {
+      return;
+    }
+    await this.deleteProgressionEvent(lastEvent.id);
+    await this.upsertUserProgression(userId, track, lastEvent.from_exercise_id);
+  }
+
+  private async fetchMostRecentEvent(userId: string): Promise<ProgressionEventRow | null> {
+    const { data, error } = await this.supabaseClient
       .from("progression_events")
       .select("*")
       .eq("user_id", userId)
       .order("advanced_at", { ascending: false })
       .limit(1);
 
-    if (fetchError) {
+    if (error) {
       throw new Error(
-        `ProgressionRepository.undoLastAdvancement: fetch failed: ${fetchError.message}`
+        `ProgressionRepository.undoLastAdvancement: fetch failed: ${error.message}`
       );
     }
-    if (!events || events.length === 0) {
-      return; // nothing to undo
+    if (!data || data.length === 0) {
+      return null;
     }
+    return data[0] as ProgressionEventRow;
+  }
 
-    const lastEvent = events[0] as ProgressionEventRow;
-
-    // Delete the progression event
-    const { error: deleteError } = await this.supabaseClient
+  private async deleteProgressionEvent(eventId: string): Promise<void> {
+    const { error } = await this.supabaseClient
       .from("progression_events")
       .delete()
-      .eq("id", lastEvent.id);
+      .eq("id", eventId);
 
-    if (deleteError) {
+    if (error) {
       throw new Error(
-        `ProgressionRepository.undoLastAdvancement: delete failed: ${deleteError.message}`
-      );
-    }
-
-    // Revert user_progression to the previous exercise
-    const { error: revertError } = await this.supabaseClient
-      .from("user_progression")
-      .upsert(
-        {
-          user_id: userId,
-          track,
-          current_exercise_id: lastEvent.from_exercise_id,
-          updated_at: new Date().toISOString(),
-        },
-        { onConflict: "user_id,track" }
-      );
-
-    if (revertError) {
-      throw new Error(
-        `ProgressionRepository.undoLastAdvancement: revert failed: ${revertError.message}`
+        `ProgressionRepository.undoLastAdvancement: delete failed: ${error.message}`
       );
     }
   }

@@ -5,6 +5,9 @@ import type { Session, PlateauWarning } from "../types/index.js";
 
 const DELOAD_URL = "https://www.reddit.com/r/bodyweightfitness/wiki/kb/recommended_routine";
 const SUGGESTION = "Consider a deload week or form focus session to break through the plateau";
+const MIN_SESSIONS_REQUIRED = 3;
+// A plateau requires at least 2 non-improving transitions (i.e. 3 flat/declining sessions)
+const PLATEAU_TRANSITION_THRESHOLD = 2;
 
 export class PlateauDetector {
   /**
@@ -20,7 +23,7 @@ export class PlateauDetector {
     exerciseName: string,
     sessions: Session[]
   ): PlateauWarning | null {
-    if (sessions.length < 3) {
+    if (sessions.length < MIN_SESSIONS_REQUIRED) {
       return null;
     }
 
@@ -28,28 +31,32 @@ export class PlateauDetector {
       (a, b) => a.loggedAt.getTime() - b.loggedAt.getTime()
     );
 
-    const reps = sorted.map((s) => s.entries[0].reps);
+    const repTrend = sorted.map((s) => s.entries[0].reps);
+    const flatRun = this.countTrailingFlatTransitions(repTrend);
 
-    let flatRun = 0;
-    for (let i = reps.length - 1; i >= 1; i--) {
-      if (reps[i] <= reps[i - 1]) {
-        flatRun++;
-      } else {
-        break;
-      }
-    }
-
-    if (flatRun < 2) {
+    if (flatRun < PLATEAU_TRANSITION_THRESHOLD) {
       return null;
     }
 
     return {
       exerciseId,
       exerciseName,
-      repTrend: reps,
+      repTrend,
       sessionsAnalyzed: sessions.length,
       suggestion: SUGGESTION,
       rrDeloadUrl: DELOAD_URL,
     };
+  }
+
+  private countTrailingFlatTransitions(reps: number[]): number {
+    let count = 0;
+    for (let i = reps.length - 1; i >= 1; i--) {
+      if (reps[i] <= reps[i - 1]) {
+        count++;
+      } else {
+        break;
+      }
+    }
+    return count;
   }
 }

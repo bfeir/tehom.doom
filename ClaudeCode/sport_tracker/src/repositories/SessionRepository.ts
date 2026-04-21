@@ -131,31 +131,37 @@ export class SessionRepository implements SessionPort {
     const toSync = this.queue.filter((session) => session.userId === userId);
     let count = 0;
     for (const session of toSync) {
-      // LWW: check if a remote version with the same id already exists and is newer
-      const { data: existing } = await this.supabaseClient
-        .from("sessions")
-        .select("logged_at")
-        .eq("id", session.id)
-        .maybeSingle<Pick<SessionRow, "logged_at">>();
-
-      if (existing && new Date(existing.logged_at) >= session.loggedAt) {
-        // Remote is same age or newer — skip (remote wins)
-        continue;
-      }
-
-      // Local is newer or doesn't exist remotely — upsert
-      await this.supabaseClient.from("sessions").upsert({
-        id: session.id,
-        user_id: session.userId,
-        entries: session.entries,
-        is_open: session.isOpen,
-        logged_at: session.loggedAt.toISOString(),
-        synced_at: new Date().toISOString(),
-      });
-      count++;
+      const synced = await this.syncOne(session);
+      if (synced) count++;
     }
     this.queue = this.queue.filter((session) => session.userId !== userId);
     return count;
+  }
+
+  private async syncOne(session: Session): Promise<boolean> {
+    const remoteIsNewer = await this.isRemoteNewer(session);
+    if (remoteIsNewer) {
+      return false;
+    }
+    await this.supabaseClient.from("sessions").upsert({
+      id: session.id,
+      user_id: session.userId,
+      entries: session.entries,
+      is_open: session.isOpen,
+      logged_at: session.loggedAt.toISOString(),
+      synced_at: new Date().toISOString(),
+    });
+    return true;
+  }
+
+  private async isRemoteNewer(session: Session): Promise<boolean> {
+    const { data: existing } = await this.supabaseClient
+      .from("sessions")
+      .select("logged_at")
+      .eq("id", session.id)
+      .maybeSingle<Pick<SessionRow, "logged_at">>();
+
+    return existing !== null && new Date(existing.logged_at) >= session.loggedAt;
   }
 
   getQueueDepth(userId: string): number {
