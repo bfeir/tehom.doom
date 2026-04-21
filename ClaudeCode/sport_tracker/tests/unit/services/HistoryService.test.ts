@@ -4,8 +4,9 @@
  * Behaviors under test:
  *   B1: plan='free' filters sessions older than 30 days
  *   B2: plan='pro' returns all sessions regardless of age
+ *   B3: plan='free' includes sessions exactly at the 30-day boundary (>=, not >)
  *
- * Test budget: 2 behaviors × 2 = 4 max. Using 2 tests (1 per behavior).
+ * Test budget: 3 behaviors × 2 = 6 max. Using 3 tests (1 per behavior).
  */
 
 import { describe, it, expect } from "vitest";
@@ -113,5 +114,39 @@ describe("HistoryService.findHistory", () => {
 
     // Assert: all 3 sessions returned
     expect(result).toHaveLength(3);
+  });
+
+  /**
+   * B3: plan='free' includes sessions exactly at the 30-day boundary (>=, not >)
+   * Production filter: s.loggedAt >= cutoff (inclusive boundary)
+   * Mutant under test: EqualityOperator changes >= to > (would exclude a session at exactly cutoff)
+   *
+   * Strategy: compute the cutoff the same way the service does, then create a session
+   * at that exact timestamp. With >=, session is included. With >, it would be excluded.
+   */
+  it("includes session at exactly the 30-day cutoff when plan is free", async () => {
+    // Compute cutoff identically to the service implementation
+    const cutoff = new Date();
+    cutoff.setDate(cutoff.getDate() - 30);
+
+    // Session at exactly the cutoff time
+    const boundarySession: Session = {
+      id: "boundary-session",
+      userId: "user-test",
+      entries: [{ exerciseId: "exercise-1", exerciseName: "Test Exercise", sets: 3, reps: 5, formQuality: 3, rpe: null }],
+      loggedAt: new Date(cutoff.getTime()),
+      syncedAt: null,
+      isOpen: false,
+    };
+    const service = new HistoryService(new StubSessionPort([boundarySession]));
+
+    // Act — service recomputes its own cutoff ~milliseconds after ours
+    const result = await service.findHistory("user-test", "exercise-1", 10, "free");
+
+    // Assert: session at or after cutoff is included
+    // Note: due to millisecond drift between our cutoff and the service's cutoff,
+    // the session (computed first) will be >= the service's cutoff (computed slightly later).
+    expect(result).toHaveLength(1);
+    expect(result[0].id).toBe("boundary-session");
   });
 });

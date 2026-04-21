@@ -1,11 +1,12 @@
 /**
  * Unit tests for PlateauDetector.detect()
  *
- * Test budget: 4 distinct behaviors × 2 = 8 max
+ * Test budget: 5 distinct behaviors × 2 = 10 max
  *   B1: flat consecutive sessions (≥3) → warning with repTrend
  *   B2: declining reps (≥3 non-improving) → warning
  *   B3: increasing reps (streak broken) → null
  *   B4: insufficient sessions (<3) → null
+ *   B5: sessions passed out of chronological order → sorted internally, correct repTrend
  *
  * PlateauDetector is a pure class — its detect() method IS the driving port.
  */
@@ -82,6 +83,39 @@ describe("PlateauDetector — insufficient sessions return null", () => {
     { label: "only 2 sessions", reps: [5, 5] },
   ])("returns null for $label", ({ reps }) => {
     const sessions = reps.map((r, i) => makeSession(`s${i}`, r, reps.length - 1 - i));
+    const warning = detector.detect(EX_ID, EX_NAME, sessions);
+    expect(warning).toBeNull();
+  });
+});
+
+// B5: sessions passed in reverse chronological order are sorted correctly
+describe("PlateauDetector — sessions sorted internally by loggedAt", () => {
+  it("detects plateau when sessions passed in reverse order (oldest first after sort)", () => {
+    // Pass sessions newest-first — detect() must sort ascending to compute correct repTrend
+    // If sort is removed/broken, the repTrend and flat-run calculation would be wrong.
+    // Trend when sorted ascending: [8, 5, 5, 5] — 2 trailing flat transitions → warning
+    // Trend without sort (as-passed, descending): [5, 5, 5, 8] — 0 trailing flat transitions → null
+    const sessions = [
+      makeSession("s-newest", 5, 0),   // today, 5 reps
+      makeSession("s-mid2",   5, 7),   // 7 days ago, 5 reps
+      makeSession("s-mid1",   5, 14),  // 14 days ago, 5 reps
+      makeSession("s-oldest", 8, 21),  // 21 days ago, 8 reps
+    ];
+    const warning = detector.detect(EX_ID, EX_NAME, sessions);
+    expect(warning).not.toBeNull();
+    // repTrend must be ascending by date: oldest first
+    expect(warning!.repTrend).toEqual([8, 5, 5, 5]);
+  });
+
+  it("returns null for improving trend when sessions passed in reverse order", () => {
+    // Trend when sorted ascending: [3, 5, 7, 9] — improving → null
+    // Trend without sort (as-passed, descending): [9, 7, 5, 3] — 3 trailing flat transitions → warning (false positive)
+    const sessions = [
+      makeSession("s-newest", 9, 0),
+      makeSession("s-mid2",   7, 7),
+      makeSession("s-mid1",   5, 14),
+      makeSession("s-oldest", 3, 21),
+    ];
     const warning = detector.detect(EX_ID, EX_NAME, sessions);
     expect(warning).toBeNull();
   });
