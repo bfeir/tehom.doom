@@ -1,0 +1,346 @@
+schema_version: 1
+
+journey:
+  name: "Progression Decision"
+  goal: "Make a confident decision about whether to advance to the next RR exercise — with a cited rationale — in under 2 minutes after a training session"
+  persona: "Marco — intermediate RR practitioner, 14 months training, follows r/BWF RR, used Google Sheets for 7 months"
+  feature: "calisthenics-tracker-v1"
+  date: "2026-04-13"
+  platform: "PWA (mobile-first, offline-capable)"
+
+  emotional_arc:
+    start: "Uncertain — just finished a set, wondering 'Was that enough to progress?'"
+    middle: "Curious then understanding — signal received, rationale read, data visible"
+    end: "Confident — clear decision made with cited rationale, no research required"
+
+steps:
+  - id: 1
+    name: "Log the Session"
+    trigger: "Marco finishes his push workout set (pike push-ups, 3×8) and opens the PWA"
+    action: "Enter exercise (autocomplete), sets/reps, optional form quality and RPE, tap Save"
+
+    ui_mockup: |
+      ┌─────────────────────────────────────────────┐
+      │  ← Today's Session            Wed Apr 13    │
+      │─────────────────────────────────────────────│
+      │  Exercise                                   │
+      │  [ pike                              × ]    │
+      │  ┌────────────────────────────────────┐     │
+      │  │ Pike Push-up (PPP progression)  ✓  │     │
+      │  │ Pike Push-up Hold               →  │     │
+      │  └────────────────────────────────────┘     │
+      │  Sets × Reps                                │
+      │  [ 3 ] × [ 8 ]    + Add set                 │
+      │  Form Quality (optional)   4 / 5            │
+      │  RPE (optional)            7                │
+      │  [ Save Session ]                           │
+      └─────────────────────────────────────────────┘
+
+    shared_artifacts:
+      - name: "exercise_id"
+        source: "exercise_registry"
+        displayed_as: "${exercise_name}"
+        consumers:
+          - "readiness_engine"
+          - "progression_tree"
+          - "session_history"
+      - name: "session_record"
+        source: "session_log (user data, offline queue)"
+        displayed_as: "${sets}×${reps} ${form_quality} RPE${rpe}"
+        consumers:
+          - "readiness_engine"
+          - "progress_history_view"
+
+    emotional_state:
+      entry: "Neutral / slightly distracted (post-workout)"
+      exit: "Neutral / routine — logging was fast and familiar"
+
+    integration_checkpoint: |
+      Exercise name typed by user must resolve to a canonical RR exercise record
+      in the exercise registry. If the exercise cannot be resolved, the readiness
+      engine cannot evaluate this session. Fallback: allow free-text entry with
+      'No RR criteria available for this exercise' message.
+
+    failure_modes:
+      - "Exercise not found in RR autocomplete (user trains a non-RR variation)"
+      - "Device offline — session must queue and sync when connected"
+      - "User exits app before saving — auto-draft must preserve partial entry"
+
+    gherkin: |
+      Scenario: Session logged with RR exercise autocomplete
+        Given Marco is on the session logging screen
+        And he begins typing "pike" in the exercise field
+        When the app shows autocomplete suggestions from the RR exercise library
+        And Marco selects "Pike Push-up (PPP progression)"
+        And enters 3 sets of 8 reps with form quality 4/5
+        And taps Save Session
+        Then the session is saved with exercise_id resolved to the RR canonical record
+        And shared artifact "exercise_id" is set to "pike-push-up-ppp-progression"
+
+  - id: 2
+    name: "View Readiness Signal"
+    trigger: "Session save completes — readiness signal card appears automatically"
+    action: "Read the headline signal (READY / NOT YET / REVIEW) and the brief criterion summary"
+
+    ui_mockup: |
+      ┌─────────────────────────────────────────────┐
+      │  Session saved ✓  Pike Push-up  3×8  RPE 7  │
+      │─────────────────────────────────────────────│
+      │  ┌─────────────────────────────────────┐    │
+      │  │  ⏳  NOT YET                        │    │
+      │  │  1 more qualifying session needed   │    │
+      │  │  RR: 3×8 at form ≥3/5 × 2 sessions │    │
+      │  │  Your streak: 1 of 2   ●○           │    │
+      │  │  ▸ See full rationale               │    │
+      │  └─────────────────────────────────────┘    │
+      │  Next if you advance: Feet Elevated PPP      │
+      │  [ View in Progression Tree ]               │
+      └─────────────────────────────────────────────┘
+
+    shared_artifacts:
+      - name: "readiness_signal"
+        source: "readiness_engine (computed from session_history + rr_criteria)"
+        displayed_as: "${signal_state} (READY / NOT YET / REVIEW)"
+        consumers:
+          - "readiness_card"
+          - "session_history_annotations"
+          - "progression_tree_status"
+      - name: "rr_criteria"
+        source: "exercise_registry (parsed from RR wiki, version-stamped)"
+        displayed_as: "${criterion_text}"
+        consumers:
+          - "readiness_engine"
+          - "rationale_view"
+          - "tree_navigator"
+
+    emotional_state:
+      entry: "Neutral / routine (just saved a session)"
+      exit: "Curious — 'What does it say? Is it right?'"
+
+    integration_checkpoint: |
+      readiness_signal must be computed using rr_criteria for the specific exercise_id
+      logged in Step 1. Signal must be displayed within 1 second of session save.
+      If rr_criteria is absent for this exercise, signal must degrade to REVIEW
+      with message 'No RR criteria found — check the wiki' rather than failing silently.
+
+    failure_modes:
+      - "Insufficient session history (< 1 prior session) — show 'Log one more session to see readiness'"
+      - "RR criteria absent for this exercise — show REVIEW with wiki link"
+      - "Signal computation takes >2 seconds — show loading state"
+
+    gherkin: |
+      Scenario: Readiness signal appears after session is saved
+        Given Marco has saved a session for Pike Push-up (PPP progression) with 3×8 form 4/5
+        And the exercise_registry has RR criteria: "3×8 at form ≥3/5 for 2 consecutive sessions"
+        And Marco's session history shows 1 prior qualifying session for this exercise
+        When the session save completes
+        Then a readiness signal card appears within 1 second
+        And the signal displays "NOT YET"
+        And the card shows "1 more qualifying session needed"
+        And the streak indicator shows "1 of 2"
+
+      Scenario: READY signal when all criteria are met
+        Given Marco has logged 2 consecutive sessions of Pike Push-up at 3×8 with form ≥3/5
+        When he saves his second qualifying session
+        Then the readiness signal displays "READY TO ADVANCE"
+        And the card shows the next exercise "Feet Elevated PPP"
+        And the card shows a CTA "Advance to Feet Elevated PPP"
+
+  - id: 3
+    name: "Read the Rationale"
+    trigger: "Marco taps 'See full rationale' on the readiness card"
+    action: "Expand the accordion — read the criterion, session evidence table, and RR wiki citation"
+
+    ui_mockup: |
+      ┌─────────────────────────────────────────────┐
+      │  ▾ Full rationale                           │
+      │─────────────────────────────────────────────│
+      │  Criterion applied:                         │
+      │  "3×8 at form ≥3/5 × 2 consecutive sessions│
+      │  Source: r/BWF Recommended Routine wiki ↗   │
+      │                                             │
+      │  Recent sessions:                           │
+      │  ┌──────────────────────────────────────┐   │
+      │  │ Date     Reps  Form  Qualifies       │   │
+      │  │ Apr 10   3×8   4/5   ✓              │   │
+      │  │ Apr 13   3×8   4/5   ✓ ← today      │   │
+      │  │ Apr 7    3×6   3/5   ✗              │   │
+      │  └──────────────────────────────────────┘   │
+      │  Streak: 2 of 2   ✓✓                        │
+      └─────────────────────────────────────────────┘
+
+    shared_artifacts:
+      - name: "session_history"
+        source: "session_log (user data)"
+        displayed_as: "Table: date / reps / form / qualifies"
+        consumers:
+          - "rationale_view"
+          - "rep_trend_analysis"
+          - "plateau_detector"
+      - name: "rr_wiki_url"
+        source: "exercise_registry (static reference)"
+        displayed_as: "Clickable source link"
+        consumers:
+          - "rationale_view"
+
+    emotional_state:
+      entry: "Curious — 'Is this correct?'"
+      exit: "Understanding — 'I can see exactly why it says what it says'"
+
+    integration_checkpoint: |
+      session_history displayed in rationale must be ordered chronologically and
+      show the same sessions that drove the readiness_signal computation. No
+      display-layer filtering that contradicts the engine's evaluation.
+
+    failure_modes:
+      - "RR wiki link returns 404 — cached criterion text must remain visible"
+      - "User disputes the criterion — show 'See the full rule on the RR wiki' link"
+      - "Session history shows 0 prior sessions — rationale explains 'This is your first logged session for this exercise'"
+
+    gherkin: |
+      Scenario: User verifies the rationale behind a NOT YET signal
+        Given Marco sees a NOT YET signal for Pike Push-up
+        When he taps "See full rationale"
+        Then an accordion expands showing the criterion: "3×8 at form ≥3/5 × 2 consecutive sessions"
+        And the RR wiki is cited as source with a clickable link
+        And a table shows his last 3 sessions with dates, reps, form scores, and qualifying status
+        And the current streak "1 of 2" is highlighted
+
+  - id: 4
+    name: "Decision Made"
+    trigger: "Rationale read — Marco decides to advance or continue"
+    action: "(If READY) Tap 'Advance to [next exercise]' OR dismiss and note the gap for next session"
+
+    ui_mockup: |
+      ┌─────────────────────────────────────────────┐
+      │  ✅  READY TO ADVANCE                       │
+      │─────────────────────────────────────────────│
+      │  You've met RR criteria for:                │
+      │  Pike Push-up (PPP progression)             │
+      │  Next: Pike Push-up with Feet Elevated      │
+      │                                             │
+      │  [ ▶ Advance to Feet Elevated PPP ]         │
+      │  [ Not yet — I'll decide later ]            │
+      │                                             │
+      │  "Your next push day will start with        │
+      │   Feet Elevated PPP as your main exercise." │
+      └─────────────────────────────────────────────┘
+
+    shared_artifacts:
+      - name: "current_exercise"
+        source: "user_progression_state"
+        displayed_as: "${current_exercise_name}"
+        consumers:
+          - "session_logger_autocomplete_default"
+          - "progression_tree_highlight"
+          - "readiness_engine_context"
+      - name: "progression_event"
+        source: "progression_log (user action)"
+        displayed_as: "History entry: advanced from X to Y on date"
+        consumers:
+          - "progression_tree"
+          - "progress_history"
+
+    emotional_state:
+      entry: "Understanding — data is clear"
+      exit: "Confident — 'I know exactly where I am and what to do next session'"
+
+    integration_checkpoint: |
+      When user advances, current_exercise must update immediately and propagate
+      to session_logger_autocomplete_default and progression_tree_highlight.
+      Advancement must be reversible within 24 hours (undo action available).
+
+    failure_modes:
+      - "User taps Advance but immediately regrets it — undo toast must appear for 5 seconds"
+      - "User dismisses without deciding — current exercise is unchanged; signal repeats next session"
+
+    gherkin: |
+      Scenario: User advances to next exercise after READY signal
+        Given Marco sees a READY signal for Pike Push-up (PPP progression)
+        And the next exercise is "Feet Elevated PPP"
+        When he taps "Advance to Feet Elevated PPP"
+        Then his current_exercise updates to "Feet Elevated PPP"
+        And a progression_event is recorded with today's date
+        And the progression tree highlights "Feet Elevated PPP" as current
+        And an undo toast appears for 5 seconds
+
+      Scenario: User dismisses without deciding
+        Given Marco sees a READY signal for Pike Push-up
+        When he dismisses the signal without tapping Advance
+        Then his current_exercise remains "Pike Push-up (PPP progression)"
+        And the signal will reappear after his next session for this exercise
+
+  - id: 5
+    name: "View Progression Tree (Optional)"
+    trigger: "Marco taps 'View in Progression Tree' from the readiness card"
+    action: "Browse the push progression chain, see current position, tap exercises to view criteria"
+    optional: true
+
+    ui_mockup: |
+      ┌─────────────────────────────────────────────┐
+      │  ← Push Progression               Apr 13    │
+      │─────────────────────────────────────────────│
+      │  ✓ Full Push-up       3×10   completed      │
+      │  ✓ Diamond Push-up    3×8    completed      │
+      │  ✓ Archer Push-up     3×5    completed      │
+      │  ● Pike Push-up       3×8    CURRENT        │
+      │  ○ PPP (Feet Elevated) —     next           │
+      │  ○ Wall Handstand P-up —     future         │
+      │  ○ Handstand Push-up   —     future         │
+      │─────────────────────────────────────────────│
+      │  [ Pike Push-up ]                           │
+      │  RR: 3×8 at form ≥3/5 × 2 sessions         │
+      │  Source: r/BWF RR wiki ↗                    │
+      │  3 of 7 exercises completed  ●●●○○○○        │
+      └─────────────────────────────────────────────┘
+
+    shared_artifacts:
+      - name: "rr_progression_chain"
+        source: "exercise_registry (ordered RR chain per skill track)"
+        displayed_as: "Ordered list with status icons (✓/●/○)"
+        consumers:
+          - "progression_tree_view"
+          - "session_logger_next_suggestion"
+
+    emotional_state:
+      entry: "Confident — decision already made in Step 4"
+      exit: "Oriented and equipped — I can see the whole path"
+
+    integration_checkpoint: |
+      rr_progression_chain must be consistent with the current_exercise value
+      set in Step 4. The highlighted current exercise in the tree must match
+      the current_exercise artifact.
+
+    failure_modes:
+      - "User's progression chain not yet configured (first-time use) — show setup prompt"
+      - "An exercise in the chain has no criteria — show placeholder with wiki link"
+
+    gherkin: |
+      Scenario: User views their position in the push progression chain
+        Given Marco's current_exercise is "Pike Push-up (PPP progression)"
+        When he opens the Progression Tree for the push track
+        Then he sees the full push progression chain from the RR
+        And "Pike Push-up (PPP progression)" is highlighted as current
+        And exercises he has advanced through are marked as completed
+        And the next exercise "Feet Elevated PPP" is shown with status "next"
+        And each exercise shows its RR criteria when tapped
+
+integration_validation:
+  shared_artifact_consistency:
+    - artifact: "exercise_id"
+      must_match_across: [1, 2, 3, 4, 5]
+      failure_message: "Exercise resolved in Step 1 must be the same exercise evaluated by readiness engine in Step 2 and displayed in tree in Step 5"
+    - artifact: "rr_criteria"
+      must_match_across: [2, 3, 5]
+      failure_message: "Criteria used to compute signal (Step 2), shown in rationale (Step 3), and shown in tree (Step 5) must be identical"
+    - artifact: "current_exercise"
+      must_match_across: [4, 5]
+      failure_message: "Exercise updated in Step 4 must be reflected immediately in tree highlight in Step 5"
+    - artifact: "session_history"
+      must_match_across: [2, 3]
+      failure_message: "Sessions driving the signal computation (Step 2) must be the same sessions shown in the rationale table (Step 3)"
+
+changelog:
+  - date: "2026-04-13"
+    feature: "calisthenics-tracker-v1"
+    change: "Initial creation. Progression Decision journey defined from DISCOVER wave artifacts. RR-based criteria post-pivot D9."
