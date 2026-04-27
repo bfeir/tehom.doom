@@ -8,6 +8,7 @@ interface TimerStoreState {
   isRunning: boolean;
   start: (duration: number) => void;
   reset: () => void;
+  extend: (ms: number) => void;
 }
 
 export const useTimerStore = create<TimerStoreState>((set) => ({
@@ -17,4 +18,6 @@ export const useTimerStore = create<TimerStoreState>((set) => ({
   start: (duration: number) =>
     set({ startedAt: Date.now(), duration, isRunning: true }),
   reset: () => set({ startedAt: null, duration: 0, isRunning: false }),
+  extend: (ms: number) =>
+    set((state) => ({ duration: state.duration + ms })),
 }));
