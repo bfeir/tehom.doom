@@ -11,11 +11,15 @@ export class HistoryService {
     plan: "free" | "pro"
   ): Promise<Session[]> {
     const sessions = await this.sessionPort.findByUserAndExercise(userId, exerciseId, limit);
-    if (plan === "free") {
-      const cutoff = new Date();
-      cutoff.setDate(cutoff.getDate() - 30);
-      return sessions.filter((s) => s.loggedAt >= cutoff);
-    }
-    return sessions;
+    const filtered = plan === "free"
+      ? sessions.filter((s) => s.loggedAt >= HistoryService.thirtyDaysCutoff())
+      : sessions;
+    return filtered.slice().sort((a, b) => b.loggedAt.getTime() - a.loggedAt.getTime());
+  }
+
+  private static thirtyDaysCutoff(): Date {
+    const cutoff = new Date();
+    cutoff.setDate(cutoff.getDate() - 30);
+    return cutoff;
   }
 }
