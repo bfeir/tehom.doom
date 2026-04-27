@@ -1,9 +1,10 @@
-// SessionRepository — adapter implementing SessionPort against Supabase + in-memory offline queue
+// SessionRepository — adapter implementing SessionPort against Supabase + IndexedDB offline queue
 // This is the ONLY layer permitted to import supabaseClient (AA3).
 
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { SessionPort } from "../ports/SessionPort.js";
 import type { Session, ExerciseEntry } from "../types/index.js";
+import { OfflineQueue } from "../lib/offlineQueue.js";
 
 // ---------------------------------------------------------------------------
 // DB row shape (snake_case from PostgREST)
@@ -35,16 +36,18 @@ function rowToSession(row: SessionRow): Session {
 // ---------------------------------------------------------------------------
 
 export class SessionRepository implements SessionPort {
-  private queue: Session[] = [];
+  private readonly offlineQueue: OfflineQueue;
 
   /**
-   * @param supabaseClient — real Supabase JS client (online path)
-   * @param offline — when true, writes go to the in-memory queue instead of Supabase
+   * @param supabaseClient — real Supabase JS client (online path); may be null when offline
+   * @param offline — when true, writes go to the IndexedDB queue instead of Supabase
    */
   constructor(
     private readonly supabaseClient: SupabaseClient,
     private readonly offline: boolean = false
-  ) {}
+  ) {
+    this.offlineQueue = new OfflineQueue();
+  }
 
   async create(userId: string): Promise<Session> {
     if (this.offline) {
@@ -56,7 +59,7 @@ export class SessionRepository implements SessionPort {
         syncedAt: null,
         isOpen: true,
       };
-      this.queue.push(session);
+      await this.offlineQueue.enqueue({ ...session, queuedAt: new Date(), syncAttempts: 0 });
       return session;
     }
 
@@ -74,6 +77,19 @@ export class SessionRepository implements SessionPort {
   }
 
   async addEntry(sessionId: string, entry: ExerciseEntry): Promise<Session> {
+    if (this.offline) {
+      const queued = await this.offlineQueue.getBySessionId(sessionId);
+      if (!queued) {
+        throw new Error(`SessionRepository.addEntry: session ${sessionId} not found in offline queue`);
+      }
+      if (!queued.isOpen) {
+        throw new Error("Cannot add entry to a closed session");
+      }
+      const updated = { ...queued, entries: [...queued.entries, entry] };
+      await this.offlineQueue.updateSession(updated);
+      return updated;
+    }
+
     const { data: current, error: fetchError } = await this.supabaseClient
       .from("sessions")
       .select()
@@ -105,6 +121,16 @@ export class SessionRepository implements SessionPort {
   }
 
   async close(sessionId: string): Promise<Session> {
+    if (this.offline) {
+      const queued = await this.offlineQueue.getBySessionId(sessionId);
+      if (!queued) {
+        throw new Error(`SessionRepository.close: session ${sessionId} not found in offline queue`);
+      }
+      const closed = { ...queued, isOpen: false };
+      await this.offlineQueue.updateSession(closed);
+      return closed;
+    }
+
     const { data, error } = await this.supabaseClient
       .from("sessions")
       .update({ is_open: false })
@@ -121,20 +147,23 @@ export class SessionRepository implements SessionPort {
 
   /**
    * Queue a pre-built session (used for conflict testing / LWW scenarios).
-   * The session is added to the in-memory queue as-is, bypassing create().
+   * The session is written to the IndexedDB queue as-is, bypassing create().
    */
-  queueConflictSession(session: Session): void {
-    this.queue.push(session);
+  async queueConflictSession(session: Session): Promise<void> {
+    await this.offlineQueue.enqueue({ ...session, queuedAt: new Date(), syncAttempts: 0 });
   }
 
   async sync(userId: string): Promise<number> {
-    const toSync = this.queue.filter((session) => session.userId === userId);
+    const all = await this.offlineQueue.getAll();
+    const toSync = all.filter((session) => session.userId === userId);
     let count = 0;
     for (const session of toSync) {
       const synced = await this.syncOne(session);
-      if (synced) count++;
+      if (synced) {
+        await this.offlineQueue.remove(session.id);
+        count++;
+      }
     }
-    this.queue = this.queue.filter((session) => session.userId !== userId);
     return count;
   }
 
@@ -168,8 +197,9 @@ export class SessionRepository implements SessionPort {
     return existing !== null && new Date(existing.logged_at) >= session.loggedAt;
   }
 
-  getQueueDepth(userId: string): number {
-    return this.queue.filter((session) => session.userId === userId).length;
+  async getQueueDepth(userId: string): Promise<number> {
+    const all = await this.offlineQueue.getAll();
+    return all.filter((session) => session.userId === userId).length;
   }
 
   async findByUserAndExercise(
@@ -177,6 +207,13 @@ export class SessionRepository implements SessionPort {
     exerciseId: string | null,
     limit = 10
   ): Promise<Session[]> {
+    if (this.offline) {
+      const all = await this.offlineQueue.getAll();
+      const filtered = all.filter((s) => s.userId === userId &&
+        (exerciseId === null || s.entries.some((e) => e.exerciseId === exerciseId)));
+      return filtered.slice(0, limit);
+    }
+
     // Fetch most-recent sessions first so we can apply the limit before reversing
     const { data, error } = await this.supabaseClient
       .from("sessions")

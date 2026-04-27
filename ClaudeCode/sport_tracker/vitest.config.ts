@@ -11,6 +11,7 @@ export default defineConfig(({ mode }) => {
       envFile: ".env.test",
       testTimeout: 10000,
       hookTimeout: 30000,
+      setupFiles: ["./vitest.setup.ts"],
     },
   };
 });
