@@ -6,7 +6,7 @@ export default defineConfig(({ mode }) => {
     test: {
       globals: false,
       environment: "node",
-      include: ["tests/**/*.test.ts"],
+      include: ["tests/**/*.test.ts", "tests/**/*.test.tsx"],
       env,
       envFile: ".env.test",
       testTimeout: 10000,

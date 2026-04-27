@@ -1,14 +1,12 @@
 // src/components/HomeScreen.tsx
-// Minimal home shell with bottom navigation tabs.
-// Shows user email in header as confirmation of authenticated session.
+// Home screen with bottom navigation tabs using React Router v6 NavLink.
+// Navigation links to /session, /readiness, /history, /chain routes.
 
 import React from "react";
-import { useAuthStore } from "../stores/authStore";
-
-type Tab = "session" | "history" | "chain" | "readiness";
+import { NavLink, Outlet } from "react-router-dom";
+import { useAuthStore } from "../stores/authStore.js";
 
 export function HomeScreen(): React.ReactElement {
-  const [activeTab, setActiveTab] = React.useState<Tab>("session");
   const user = useAuthStore((s) => s.user);
 
   return (
@@ -18,41 +16,38 @@ export function HomeScreen(): React.ReactElement {
       </header>
 
       <main>
-        {activeTab === "session" && <p>Session</p>}
-        {activeTab === "history" && <p>History</p>}
-        {activeTab === "chain" && <p>Chain</p>}
-        {activeTab === "readiness" && <p>Readiness</p>}
+        <Outlet />
       </main>
 
       <nav aria-label="Bottom navigation">
-        <button
-          type="button"
-          aria-current={activeTab === "session" ? "page" : undefined}
-          onClick={() => setActiveTab("session")}
+        <NavLink
+          to="/session"
+          aria-label="Session"
+          aria-current={({ isActive }) => (isActive ? "page" : undefined)}
         >
           Session
-        </button>
-        <button
-          type="button"
-          aria-current={activeTab === "history" ? "page" : undefined}
-          onClick={() => setActiveTab("history")}
+        </NavLink>
+        <NavLink
+          to="/history"
+          aria-label="History"
+          aria-current={({ isActive }) => (isActive ? "page" : undefined)}
         >
           History
-        </button>
-        <button
-          type="button"
-          aria-current={activeTab === "chain" ? "page" : undefined}
-          onClick={() => setActiveTab("chain")}
+        </NavLink>
+        <NavLink
+          to="/chain"
+          aria-label="Chain"
+          aria-current={({ isActive }) => (isActive ? "page" : undefined)}
         >
           Chain
-        </button>
-        <button
-          type="button"
-          aria-current={activeTab === "readiness" ? "page" : undefined}
-          onClick={() => setActiveTab("readiness")}
+        </NavLink>
+        <NavLink
+          to="/readiness"
+          aria-label="Readiness"
+          aria-current={({ isActive }) => (isActive ? "page" : undefined)}
         >
           Readiness
-        </button>
+        </NavLink>
       </nav>
     </div>
   );
