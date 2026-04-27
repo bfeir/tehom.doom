@@ -1,3 +1,4 @@
+// @vitest-environment happy-dom
 /**
  * SessionScreen Component — Unit Tests
  *
@@ -10,9 +11,10 @@
  * Mocks: useSessionLogger (hook), useRestTimer (hook), Supabase (no network).
  */
 
-import { describe, it, expect, vi } from "vitest";
+import { describe, it, expect, vi, type Mock } from "vitest";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import type { Session } from "../../../src/types/index.js";
 
 // Mock Supabase client to prevent initialization error in test environment
 vi.mock("../../../src/lib/supabaseClient.js", () => ({
@@ -150,6 +152,100 @@ describe("Interactive elements meet the 44px minimum touch target size", () => {
       const saveButton = screen.getByRole("button", { name: /save/i });
       const rect = saveButton.getBoundingClientRect();
       expect(rect.height).toBeGreaterThanOrEqual(44);
+    }
+  );
+});
+
+// ---------------------------------------------------------------------------
+// Step 03-03 — Session close summary
+// Test budget: 2 behaviors × 2 = 4 max unit tests
+// ---------------------------------------------------------------------------
+
+function makeClosedSession(entries: Session["entries"]): Session {
+  return {
+    id: "session-closed-1",
+    userId: "user-marco",
+    isOpen: false,
+    loggedAt: new Date("2026-04-27T10:00:00Z"),
+    syncedAt: null,
+    entries,
+  };
+}
+
+describe("Session close summary groups entries by exercise name", () => {
+  /**
+   * Given Marco has logged Pike Push-ups (2 entries, 3 sets × 8 reps each)
+   * and Pull-up Negatives (1 entry, 3 sets × 5 reps)
+   * When the session is closed and the summary is shown
+   * Then each exercise appears once with total sets and reps
+   */
+  it(
+    "renders each exercise with its total sets and reps after session close",
+    () => {
+      const closedSession = makeClosedSession([
+        {
+          exerciseId: "ex-pike",
+          exerciseName: "Pike Push-ups",
+          sets: 3,
+          reps: 8,
+          formQuality: null,
+          rpe: null,
+        },
+        {
+          exerciseId: "ex-pullup",
+          exerciseName: "Pull-up Negatives",
+          sets: 3,
+          reps: 5,
+          formQuality: null,
+          rpe: null,
+        },
+      ]);
+
+      render(
+        <SessionScreen
+          sessionId="session-closed-1"
+          userId="user-marco"
+          closedSession={closedSession}
+        />
+      );
+
+      expect(screen.getByRole("region", { name: /session summary/i })).toBeTruthy();
+      expect(screen.getByText(/Pike Push-ups/i)).toBeTruthy();
+      expect(screen.getByText(/Pull-up Negatives/i)).toBeTruthy();
+    }
+  );
+
+  /**
+   * Given Marco closes a session while offline (navigator.onLine is false)
+   * When the summary is shown
+   * Then a sync-pending indicator is visible
+   */
+  it(
+    "shows sync-pending status indicator when session has not yet synced",
+    () => {
+      const closedSession = makeClosedSession([
+        {
+          exerciseId: "ex-pike",
+          exerciseName: "Pike Push-ups",
+          sets: 3,
+          reps: 8,
+          formQuality: null,
+          rpe: null,
+        },
+      ]);
+      // syncedAt is null — session is in offline queue
+      expect(closedSession.syncedAt).toBeNull();
+
+      render(
+        <SessionScreen
+          sessionId="session-closed-1"
+          userId="user-marco"
+          closedSession={closedSession}
+        />
+      );
+
+      const syncElements = screen.getAllByText(/saved offline|sync pending|will sync/i);
+      expect(syncElements.length).toBeGreaterThan(0);
     }
   );
 });

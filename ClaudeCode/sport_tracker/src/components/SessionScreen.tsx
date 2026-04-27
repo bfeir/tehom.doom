@@ -2,27 +2,84 @@
 // Session logging screen: displays the open session, logged entry count,
 // a "Log Set" button (wired to useSessionLogger), and a "Done — Close Session"
 // button with confirmation guard when zero sets have been logged.
+//
+// When closedSession prop is provided, renders the close summary instead
+// of the active logging UI.
 
 import React, { useState } from "react";
 import { useSessionLogger } from "../hooks/useSessionLogger.js";
 import { useSessionStore } from "../stores/sessionStore.js";
 import { SessionRepository } from "../repositories/SessionRepository.js";
 import supabaseClient from "../lib/supabaseClient.js";
+import type { Session, ExerciseEntry } from "../types/index.js";
 
 const sessionRepository = new SessionRepository(supabaseClient, false);
 
 export interface SessionScreenProps {
   sessionId: string;
   userId: string;
+  closedSession?: Session;
 }
 
-export function SessionScreen({ sessionId, userId: _userId }: SessionScreenProps): React.ReactElement {
+interface ExerciseSummary {
+  exerciseName: string;
+  totalSets: number;
+  typicalReps: number;
+}
+
+function groupEntriesByExercise(entries: ExerciseEntry[]): ExerciseSummary[] {
+  const byName = new Map<string, ExerciseSummary>();
+  for (const entry of entries) {
+    const existing = byName.get(entry.exerciseName);
+    if (existing) {
+      existing.totalSets += entry.sets;
+    } else {
+      byName.set(entry.exerciseName, {
+        exerciseName: entry.exerciseName,
+        totalSets: entry.sets,
+        typicalReps: entry.reps,
+      });
+    }
+  }
+  return Array.from(byName.values());
+}
+
+function CloseSummary({ session }: { session: Session }): React.ReactElement {
+  const grouped = groupEntriesByExercise(session.entries);
+  const hasPendingSync = session.syncedAt === null;
+
+  return (
+    <section aria-label="Session summary">
+      <h2>Session Summary</h2>
+      {hasPendingSync && (
+        <p>Saved offline — will sync on reconnect</p>
+      )}
+      <ul>
+        {grouped.map((item) => (
+          <li key={item.exerciseName}>
+            {item.exerciseName}: {item.totalSets} sets × {item.typicalReps} reps
+          </li>
+        ))}
+      </ul>
+    </section>
+  );
+}
+
+export function SessionScreen({
+  sessionId,
+  userId: _userId,
+  closedSession,
+}: SessionScreenProps): React.ReactElement {
   const { logSet, currentSession, isLoading, error } = useSessionLogger({
     sessionId,
     sessionPort: sessionRepository,
   });
   const { openSession } = useSessionStore();
   const [confirmClose, setConfirmClose] = useState(false);
+
+  if (closedSession) {
+    return <CloseSummary session={closedSession} />;
+  }
 
   const entryCount = currentSession?.entries?.length ?? 0;
 
