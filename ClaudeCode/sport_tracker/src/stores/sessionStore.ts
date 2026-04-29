@@ -1,9 +1,18 @@
 // src/stores/sessionStore.ts
 // Zustand store for session UI state.
-// Shape: openSession + currentExercise only. No timer state here.
+// Shape: openSession + currentExercise + offline sync state.
 
 import { create } from "zustand";
 import type { Session } from "../types/index.js";
+import type { SyncCoordinator } from "../lib/syncCoordinator.js";
+
+// Boot-time singleton reference — wired in main.tsx after SyncCoordinator.start()
+let syncCoordinatorInstance: SyncCoordinator | null = null;
+
+/** Called once from main.tsx to wire the SyncCoordinator singleton. */
+export function setSyncCoordinator(coordinator: SyncCoordinator): void {
+  syncCoordinatorInstance = coordinator;
+}
 
 interface SessionStoreState {
   openSession: Session | null;
@@ -21,6 +30,14 @@ interface SessionStoreState {
    * SessionPort.close(). Does not call the port itself.
    */
   closeSession: () => void;
+  /** Current offline queue depth — drives sync badge count. */
+  queueDepth: number;
+  setQueueDepth: (n: number) => void;
+  /** True when SyncCoordinator has exhausted MAX_RETRIES — show tap-to-retry UI. */
+  syncRetryAvailable: boolean;
+  setSyncRetryAvailable: (available: boolean) => void;
+  /** Triggers a manual sync via the SyncCoordinator singleton. */
+  triggerSync: () => Promise<void>;
 }
 
 export const useSessionStore = create<SessionStoreState>((set) => ({
@@ -33,4 +50,18 @@ export const useSessionStore = create<SessionStoreState>((set) => ({
     // Key invariant: does NOT call SessionPort.create() — prevents duplicates.
   },
   closeSession: () => set({ openSession: null }),
+  queueDepth: 0,
+  setQueueDepth: (n) => set({ queueDepth: n }),
+  syncRetryAvailable: false,
+  setSyncRetryAvailable: (available) => set({ syncRetryAvailable: available }),
+  triggerSync: async () => {
+    if (!syncCoordinatorInstance) {
+      return;
+    }
+    const result = await syncCoordinatorInstance.retryNow();
+    set({
+      queueDepth: result.remaining,
+      syncRetryAvailable: syncCoordinatorInstance.isSyncRetryAvailable(),
+    });
+  },
 }));

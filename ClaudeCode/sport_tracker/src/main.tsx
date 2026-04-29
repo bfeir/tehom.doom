@@ -1,10 +1,16 @@
 // src/main.tsx
 // React 18 entry point. Creates the browser router with all 6 routes
 // and mounts the app with RouterProvider.
+// Boot-time singleton: SyncCoordinator is wired here before React mounts.
 
 import React from "react";
 import ReactDOM from "react-dom/client";
 import { createBrowserRouter, RouterProvider, Navigate } from "react-router-dom";
+import { OfflineQueue } from "./lib/offlineQueue.js";
+import { SyncCoordinator } from "./lib/syncCoordinator.js";
+import { setSyncCoordinator } from "./stores/sessionStore.js";
+import { SessionRepository } from "./repositories/SessionRepository.js";
+import supabaseClient from "./lib/supabaseClient.js";
 
 import { AuthScreen } from "./components/AuthScreen.js";
 import { HomeScreen } from "./components/HomeScreen.js";
@@ -64,6 +70,24 @@ export const router = createBrowserRouter([
     ),
   },
 ]);
+
+// ---------------------------------------------------------------------------
+// Boot-time singleton — wired before React mounts
+// ---------------------------------------------------------------------------
+
+const offlineQueue = new OfflineQueue();
+const sessionRepo = new SessionRepository(supabaseClient, false);
+const syncCoordinator = new SyncCoordinator(offlineQueue, {
+  sync: async (session) => {
+    await sessionRepo.syncOne(session);
+  },
+});
+setSyncCoordinator(syncCoordinator);
+syncCoordinator.start();
+
+// ---------------------------------------------------------------------------
+// React mount
+// ---------------------------------------------------------------------------
 
 const rootElement = document.getElementById("root");
 if (rootElement) {

@@ -167,7 +167,8 @@ export class SessionRepository implements SessionPort {
     return count;
   }
 
-  private async syncOne(session: Session): Promise<boolean> {
+  /** Upsert a single session to Supabase. Public for SyncCoordinator use. */
+  async syncOne(session: Session): Promise<boolean> {
     const remoteIsNewer = await this.isRemoteNewer(session);
     if (remoteIsNewer) {
       return false;
