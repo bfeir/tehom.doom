@@ -76,15 +76,20 @@ export class SessionRepository implements SessionPort {
     return rowToSession(data);
   }
 
+  private async getOpenQueuedSession(sessionId: string, operation: string) {
+    const queued = await this.offlineQueue.getBySessionId(sessionId);
+    if (!queued) {
+      throw new Error(`SessionRepository.${operation}: session ${sessionId} not found in offline queue`);
+    }
+    if (!queued.isOpen) {
+      throw new Error("Cannot add entry to a closed session");
+    }
+    return queued;
+  }
+
   async addEntry(sessionId: string, entry: ExerciseEntry): Promise<Session> {
     if (this.offline) {
-      const queued = await this.offlineQueue.getBySessionId(sessionId);
-      if (!queued) {
-        throw new Error(`SessionRepository.addEntry: session ${sessionId} not found in offline queue`);
-      }
-      if (!queued.isOpen) {
-        throw new Error("Cannot add entry to a closed session");
-      }
+      const queued = await this.getOpenQueuedSession(sessionId, "addEntry");
       const updated = { ...queued, entries: [...queued.entries, entry] };
       await this.offlineQueue.updateSession(updated);
       return updated;
@@ -210,8 +215,10 @@ export class SessionRepository implements SessionPort {
   ): Promise<Session[]> {
     if (this.offline) {
       const all = await this.offlineQueue.getAll();
-      const filtered = all.filter((s) => s.userId === userId &&
-        (exerciseId === null || s.entries.some((e) => e.exerciseId === exerciseId)));
+      const filtered = all.filter((session) =>
+        session.userId === userId &&
+        (exerciseId === null || session.entries.some((entry) => entry.exerciseId === exerciseId))
+      );
       return filtered.slice(0, limit);
     }
 
@@ -229,7 +236,7 @@ export class SessionRepository implements SessionPort {
 
     const filtered = exerciseId === null
       ? data
-      : data.filter((row) => row.entries.some((e) => e.exerciseId === exerciseId));
+      : data.filter((row) => row.entries.some((entry) => entry.exerciseId === exerciseId));
 
     // Take the most-recent `limit` entries, then reverse to chronological (ascending) order
     return filtered.slice(0, limit).reverse().map(rowToSession);

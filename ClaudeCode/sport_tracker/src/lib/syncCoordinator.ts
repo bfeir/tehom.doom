@@ -98,7 +98,7 @@ export class SyncCoordinator {
   /** Returns true when all remaining queued sessions have reached MAX_RETRIES. */
   private async allExhaustedMaxRetries(): Promise<boolean> {
     const remaining = await this.queue.getAll();
-    return remaining.every((s) => s.syncAttempts >= MAX_RETRIES);
+    return remaining.every((session) => session.syncAttempts >= MAX_RETRIES);
   }
 
   /** Returns whether tap-to-retry is available. */

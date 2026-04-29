@@ -12,7 +12,7 @@ export class HistoryService {
   ): Promise<Session[]> {
     const sessions = await this.sessionPort.findByUserAndExercise(userId, exerciseId, limit);
     const filtered = plan === "free"
-      ? sessions.filter((s) => s.loggedAt >= HistoryService.thirtyDaysCutoff())
+      ? sessions.filter((session) => session.loggedAt >= HistoryService.thirtyDaysCutoff())
       : sessions;
     return filtered.slice().sort((a, b) => b.loggedAt.getTime() - a.loggedAt.getTime());
   }

@@ -57,11 +57,7 @@ function ExerciseListItem({
 }): React.ReactElement {
   return (
     <li
-      className={
-        isCurrent
-          ? "progression-chain__item progression-chain__item--current"
-          : "progression-chain__item"
-      }
+      className={["progression-chain__item", isCurrent && "progression-chain__item--current"].filter(Boolean).join(" ")}
       aria-current={isCurrent ? "step" : undefined}
     >
       {exercise.name}
@@ -76,10 +72,10 @@ export function ProgressionChain(props: ProgressionChainProps): React.ReactEleme
   const { chain, currentExerciseId } = props;
 
   const currentIndex = currentExerciseId
-    ? chain.findIndex((e) => e.id === currentExerciseId)
+    ? chain.findIndex((exercise) => exercise.id === currentExerciseId)
     : -1;
 
-  const isFreeText = currentExerciseId === null;
+  const isCurrentExerciseUntracked = currentExerciseId === null;
   const isEndOfChain = currentIndex >= 0 && currentIndex === chain.length - 1;
   const nextExercise =
     currentIndex >= 0 && currentIndex + 1 < chain.length
@@ -88,7 +84,7 @@ export function ProgressionChain(props: ProgressionChainProps): React.ReactEleme
 
   return (
     <div className="progression-chain">
-      {isFreeText && <FreeTextOrientationMessage />}
+      {isCurrentExerciseUntracked && <FreeTextOrientationMessage />}
       <ol className="progression-chain__list">
         {chain.map((exercise) => (
           <ExerciseListItem

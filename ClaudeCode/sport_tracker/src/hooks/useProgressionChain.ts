@@ -54,7 +54,7 @@ export function useProgressionChain(
   const currentExerciseId = data?.currentExerciseId ?? null;
 
   const currentIndex = currentExerciseId
-    ? chain.findIndex((e) => e.id === currentExerciseId)
+    ? chain.findIndex((exercise) => exercise.id === currentExerciseId)
     : -1;
 
   const nextExercise =

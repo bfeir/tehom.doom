@@ -65,12 +65,11 @@ export function useReadinessSignal(
           setIsLoading(false);
         }
       })
-      .catch((err: unknown) => {
+      .catch((_err: unknown) => {
         clearTimeout(timeoutId);
         if (!controller.signal.aborted) {
           setIsLoading(false);
           setError("Could not compute readiness. Please try again.");
-          void err;
         }
       });
   }, [userId, exerciseId]);
