@@ -22,7 +22,7 @@ import type { Session } from "../../../src/types/index.js";
 // ---------------------------------------------------------------------------
 
 interface SessionSyncPort {
-  sync(session: QueuedSession): Promise<void>;
+  sync(session: QueuedSession): Promise<boolean>;
 }
 
 function buildQueuedSession(id: string, queuedAt: Date): QueuedSession {
@@ -46,7 +46,7 @@ describe("SyncCoordinator — drain() on successful sync", () => {
     await queue.clear();
 
     sessionSyncPort = {
-      sync: vi.fn().mockResolvedValue(undefined),
+      sync: vi.fn().mockResolvedValue(true),
     };
   });
 

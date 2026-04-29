@@ -43,8 +43,8 @@ export function useReadinessSignal(
     setIsLoading(true);
 
     const supabase = createClient(
-      process.env["SUPABASE_URL"] ?? "",
-      process.env["SUPABASE_ANON_KEY"] ?? ""
+      import.meta.env["VITE_SUPABASE_URL"] as string,
+      import.meta.env["VITE_SUPABASE_ANON_KEY"] as string
     );
     const engine = new ReadinessEngine(supabase);
 

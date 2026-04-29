@@ -16,7 +16,8 @@ export interface SyncResult {
 
 /** Minimal sync-capable port — implemented by SessionRepository */
 export interface SessionSyncPort {
-  sync(session: QueuedSession): Promise<void>;
+  /** Returns true when the session was successfully written to remote. */
+  sync(session: QueuedSession): Promise<boolean>;
 }
 
 // ---------------------------------------------------------------------------
@@ -108,8 +109,7 @@ export class SyncCoordinator {
 
   private async syncOne(session: QueuedSession): Promise<boolean> {
     try {
-      await this.sessionSyncPort.sync(session);
-      return true;
+      return await this.sessionSyncPort.sync(session);
     } catch {
       const updated: QueuedSession = {
         ...session,

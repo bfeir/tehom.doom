@@ -78,9 +78,7 @@ export const router = createBrowserRouter([
 const offlineQueue = new OfflineQueue();
 const sessionRepo = new SessionRepository(supabaseClient, false);
 const syncCoordinator = new SyncCoordinator(offlineQueue, {
-  sync: async (session) => {
-    await sessionRepo.syncOne(session);
-  },
+  sync: (session) => sessionRepo.syncOne(session),
 });
 setSyncCoordinator(syncCoordinator);
 syncCoordinator.start();
