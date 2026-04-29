@@ -5,12 +5,14 @@
 import React from "react";
 import { NavLink, Outlet } from "react-router-dom";
 import { useAuthStore } from "../stores/authStore.js";
+import { AddToHomeScreenBanner } from "./AddToHomeScreenBanner.js";
 
 export function HomeScreen(): React.ReactElement {
   const user = useAuthStore((s) => s.user);
 
   return (
     <div aria-label="Home">
+      <AddToHomeScreenBanner />
       <header>
         <span aria-label="User email">{user?.email ?? ""}</span>
       </header>
