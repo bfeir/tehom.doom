@@ -5,6 +5,7 @@
 
 import { render, screen } from "@testing-library/react";
 import React from "react";
+import { MemoryRouter } from "react-router-dom";
 import { describe, it, expect, beforeEach } from "vitest";
 import { RequireAuth } from "../../../src/components/RequireAuth";
 import { useAuthStore } from "../../../src/stores/authStore";
@@ -21,9 +22,11 @@ describe("RequireAuth", () => {
     });
 
     render(
-      <RequireAuth>
-        <div data-testid="protected-content">Protected</div>
-      </RequireAuth>
+      <MemoryRouter>
+        <RequireAuth>
+          <div data-testid="protected-content">Protected</div>
+        </RequireAuth>
+      </MemoryRouter>
     );
 
     expect(screen.getByTestId("protected-content")).toBeTruthy();
@@ -31,9 +34,11 @@ describe("RequireAuth", () => {
 
   it("does not render protected content when user is not authenticated", () => {
     render(
-      <RequireAuth>
-        <div data-testid="protected-content">Protected</div>
-      </RequireAuth>
+      <MemoryRouter>
+        <RequireAuth>
+          <div data-testid="protected-content">Protected</div>
+        </RequireAuth>
+      </MemoryRouter>
     );
 
     expect(screen.queryByTestId("protected-content")).toBeNull();

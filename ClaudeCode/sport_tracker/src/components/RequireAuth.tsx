@@ -1,8 +1,8 @@
 // src/components/RequireAuth.tsx
-// Route guard: renders children when authenticated, otherwise a redirect placeholder.
-// React Router v6 will replace the placeholder redirect in step 03-02.
+// Route guard: renders children when authenticated, otherwise redirects to /auth.
 
 import React from "react";
+import { Navigate } from "react-router-dom";
 import { useAuthStore } from "../stores/authStore";
 
 interface RequireAuthProps {
@@ -13,8 +13,7 @@ export function RequireAuth({ children }: RequireAuthProps): React.ReactElement 
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
 
   if (!isAuthenticated) {
-    // Placeholder until React Router v6 is wired in step 03-02.
-    return <div data-testid="redirect-to-auth" aria-label="Redirecting to sign-in" />;
+    return <Navigate to="/auth" replace />;
   }
 
   return <>{children}</>;

@@ -2,7 +2,8 @@
 // Email/password auth form with sign-in / sign-up mode toggle.
 // Error messages are plain language — no HTTP status codes exposed.
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import supabase from "../lib/supabaseClient";
 import { useAuthStore } from "../stores/authStore";
 
@@ -39,6 +40,14 @@ export function AuthScreen(): React.ReactElement {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const setUser = useAuthStore((s) => s.setUser);
   const setLoading = useAuthStore((s) => s.setLoading);
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      navigate("/home", { replace: true });
+    }
+  }, [isAuthenticated, navigate]);
 
   const handleSubmit = async (e: React.FormEvent): Promise<void> => {
     e.preventDefault();
@@ -64,8 +73,10 @@ export function AuthScreen(): React.ReactElement {
 
     if (error) {
       setErrorMessage(mapAuthError(error));
-    } else if (data.user) {
-      setUser({ id: data.user.id, email: data.user.email ?? "" });
+    } else if (data.session?.user) {
+      setUser({ id: data.session.user.id, email: data.session.user.email ?? "" });
+    } else if (mode === "signup" && data.user && !data.session) {
+      setErrorMessage("Check your email and click the confirmation link to complete sign-up.");
     }
 
     setIsSubmitting(false);

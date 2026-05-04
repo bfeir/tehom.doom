@@ -8,9 +8,10 @@ import ReactDOM from "react-dom/client";
 import { createBrowserRouter, RouterProvider, Navigate } from "react-router-dom";
 import { OfflineQueue } from "./lib/offlineQueue.js";
 import { SyncCoordinator } from "./lib/syncCoordinator.js";
-import { setSyncCoordinator } from "./stores/sessionStore.js";
+import { setSyncCoordinator, useSessionStore } from "./stores/sessionStore.js";
+import { useAuthStore } from "./stores/authStore.js";
 import { SessionRepository } from "./repositories/SessionRepository.js";
-import supabaseClient from "./lib/supabaseClient.js";
+import supabaseClient, { initAuth } from "./lib/supabaseClient.js";
 
 import { AuthScreen } from "./components/AuthScreen.js";
 import { HomeScreen } from "./components/HomeScreen.js";
@@ -19,56 +20,90 @@ import { ReadinessCard } from "./components/ReadinessCard.js";
 import { ExerciseHistory } from "./components/ExerciseHistory.js";
 import { ProgressionChain } from "./components/ProgressionChain.js";
 import { RequireAuth } from "./components/RequireAuth.js";
+import { useReadinessSignal } from "./hooks/useReadinessSignal.js";
+import { useExerciseHistory } from "./hooks/useExerciseHistory.js";
+import { useProgressionChain } from "./hooks/useProgressionChain.js";
+
+// ---------------------------------------------------------------------------
+// Page wrappers — connect hooks to presentational components
+// ---------------------------------------------------------------------------
+
+function ReadinessPage(): React.ReactElement {
+  const user = useAuthStore((s) => s.user);
+  const currentExercise = useSessionStore((s) => s.currentExercise);
+  const { signal, isOffline, hasTimedOut, check } = useReadinessSignal({
+    userId: user?.id ?? "",
+    exerciseId: currentExercise ?? "",
+  });
+  return (
+    <ReadinessCard
+      signal={signal}
+      isOffline={isOffline}
+      hasTimedOut={hasTimedOut}
+      onRetry={check}
+    />
+  );
+}
+
+function HistoryPage(): React.ReactElement {
+  const user = useAuthStore((s) => s.user);
+  const currentExercise = useSessionStore((s) => s.currentExercise);
+  const { sessions, isOffline, lastSyncedAt } = useExerciseHistory({
+    userId: user?.id ?? "",
+    exerciseId: currentExercise ?? "",
+    plan: "free",
+  });
+  return (
+    <ExerciseHistory
+      exerciseName={currentExercise ?? "All exercises"}
+      sessions={sessions}
+      isOffline={isOffline}
+      lastSyncedAt={lastSyncedAt ?? undefined}
+    />
+  );
+}
+
+function ChainPage(): React.ReactElement {
+  const user = useAuthStore((s) => s.user);
+  const { chain, currentExerciseId } = useProgressionChain({
+    userId: user?.id ?? "",
+    track: "push",
+  });
+  return <ProgressionChain chain={chain} currentExerciseId={currentExerciseId} />;
+}
+
+function SessionPage(): React.ReactElement {
+  const user = useAuthStore((s) => s.user);
+  const openSession = useSessionStore((s) => s.openSession);
+  return (
+    <SessionScreen
+      sessionId={openSession?.id ?? ""}
+      userId={user?.id ?? ""}
+    />
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Router
+// ---------------------------------------------------------------------------
 
 export const router = createBrowserRouter([
-  {
-    path: "/",
-    element: <Navigate to="/auth" replace />,
-  },
-  {
-    path: "/auth",
-    element: <AuthScreen />,
-  },
+  { path: "/", element: <Navigate to="/auth" replace /> },
+  { path: "/auth", element: <AuthScreen /> },
   {
     path: "/home",
-    element: (
-      <RequireAuth>
-        <HomeScreen />
-      </RequireAuth>
-    ),
+    element: <RequireAuth><HomeScreen /></RequireAuth>,
+    children: [
+      { path: "session", element: <SessionPage /> },
+      { path: "history", element: <HistoryPage /> },
+      { path: "chain", element: <ChainPage /> },
+      { path: "readiness", element: <ReadinessPage /> },
+    ],
   },
-  {
-    path: "/session",
-    element: (
-      <RequireAuth>
-        <SessionScreen sessionId="" userId="" />
-      </RequireAuth>
-    ),
-  },
-  {
-    path: "/readiness",
-    element: (
-      <RequireAuth>
-        <ReadinessCard />
-      </RequireAuth>
-    ),
-  },
-  {
-    path: "/history",
-    element: (
-      <RequireAuth>
-        <ExerciseHistory />
-      </RequireAuth>
-    ),
-  },
-  {
-    path: "/chain",
-    element: (
-      <RequireAuth>
-        <ProgressionChain />
-      </RequireAuth>
-    ),
-  },
+  { path: "/session", element: <RequireAuth><SessionPage /></RequireAuth> },
+  { path: "/readiness", element: <RequireAuth><ReadinessPage /></RequireAuth> },
+  { path: "/history", element: <RequireAuth><HistoryPage /></RequireAuth> },
+  { path: "/chain", element: <RequireAuth><ChainPage /></RequireAuth> },
 ]);
 
 // ---------------------------------------------------------------------------
@@ -82,6 +117,7 @@ const syncCoordinator = new SyncCoordinator(offlineQueue, {
 });
 setSyncCoordinator(syncCoordinator);
 syncCoordinator.start();
+initAuth(useAuthStore.getState());
 
 // ---------------------------------------------------------------------------
 // React mount
