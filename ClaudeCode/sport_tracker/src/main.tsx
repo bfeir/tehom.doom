@@ -3,6 +3,7 @@
 // and mounts the app with RouterProvider.
 // Boot-time singleton: SyncCoordinator is wired here before React mounts.
 
+import './styles/design-tokens.css';
 import React from "react";
 import ReactDOM from "react-dom/client";
 import { createBrowserRouter, RouterProvider, Navigate } from "react-router-dom";

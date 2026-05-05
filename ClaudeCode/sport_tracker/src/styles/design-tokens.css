@@ -1,0 +1,109 @@
+/* src/styles/design-tokens.css
+   Design token SSOT — all CSS custom properties for color, spacing, radius,
+   typography, and motion. Import this file before any component CSS.
+*/
+
+/* -------------------------------------------------------------------------
+   Base theme (dark, default)
+   ---------------------------------------------------------------------- */
+
+:root {
+  /* Color — background */
+  --bg-base: #1A1A1F;
+  --bg-surface: #26262D;
+  --bg-elevated: #32323C;
+
+  /* Color — accent */
+  --accent: #00B8D4;
+  --accent-dim: #004D5C;
+
+  /* Color — text */
+  --text-primary: #F0F0F5;
+  --text-secondary: #8A8A9A;
+  --text-muted: #5A5A6A;
+
+  /* Color — semantic */
+  --danger: #EF5350;
+  --success: #00C896;
+  --offline: #8A8A9A;
+
+  /* Color — border */
+  --border: #3A3A45;
+  --border-strong: #55556A;
+
+  /* Spacing */
+  --spacing-1: 4px;
+  --spacing-2: 8px;
+  --spacing-3: 12px;
+  --spacing-4: 16px;
+  --spacing-5: 20px;
+  --spacing-6: 24px;
+  --spacing-7: 28px;
+  --spacing-8: 32px;
+  --spacing-9: 36px;
+  --spacing-10: 40px;
+  --spacing-11: 44px;
+  --spacing-12: 48px;
+  --touch-target: 44px;
+
+  /* Radius */
+  --radius-card: 12px;
+  --radius-button: 8px;
+  --radius-chip: 99px;
+
+  /* Motion */
+  --transition-duration: 150ms;
+  --animation-duration: 220ms;
+
+  /* Typography — font size */
+  --font-size-timer: 56px;
+  --font-size-set-count: 32px;
+  --font-size-body: 16px;
+  --font-size-label: 13px;
+
+  /* Typography — font weight */
+  --font-weight-bold: 700;
+  --font-weight-semi: 600;
+  --font-weight-regular: 400;
+}
+
+/* -------------------------------------------------------------------------
+   Light theme overrides
+   ---------------------------------------------------------------------- */
+
+@media (prefers-color-scheme: light) {
+  :root {
+    /* Color — background */
+    --bg-base: #F5F5F7;
+    --bg-surface: #FFFFFF;
+    --bg-elevated: #EBEBF0;
+
+    /* Color — accent */
+    --accent-dim: #B3ECF5;
+
+    /* Color — text */
+    --text-primary: #1A1A1F;
+    --text-secondary: #6B6B7A;
+    --text-muted: #9A9AAA;
+
+    /* Color — semantic */
+    --danger: #D32F2F;
+    --success: #00A87A;
+    --offline: #6B6B7A;
+
+    /* Color — border */
+    --border: #D9D9E0;
+    --border-strong: #B0B0BF;
+  }
+}
+
+/* -------------------------------------------------------------------------
+   Reduced motion overrides
+   ---------------------------------------------------------------------- */
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --transition-duration: 0ms;
+    --animation-duration: 0ms;
+  }
+}
