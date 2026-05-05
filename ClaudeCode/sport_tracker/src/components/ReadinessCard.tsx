@@ -1,17 +1,11 @@
 import React from "react";
+import type { ReadinessSignal } from "../types/index.js";
+import "../styles/readiness.css";
 
-export interface ReadinessSignalDisplay {
-  state: "NOT_YET" | "READY" | "REVIEW";
-  streakCurrent: number;
-  streakRequired: number;
-  criterionSummary: string;
-  nextExerciseId: string | null;
-  rrWikiUrl: string;
-  formScoreHistory: number[];
-}
+export type ReadinessSignalDisplay = ReadinessSignal;
 
 export interface ReadinessCardProps {
-  signal: ReadinessSignalDisplay | null;
+  signal: ReadinessSignal | null;
   isOffline?: boolean;
   hasTimedOut?: boolean;
   onRetry?: () => void;

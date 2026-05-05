@@ -1,0 +1,66 @@
+/* src/styles/readiness.css
+   BEM styles for the ReadinessCard component.
+   All color values use CSS custom properties from design-tokens.css.
+   Exception: --review-amber (#F5A623) is defined locally — amber is not in
+   the token set and using a hex literal here is the documented exception for
+   this file only.
+*/
+
+/* -------------------------------------------------------------------------
+   Local token — amber for REVIEW state (not in global token set)
+   ---------------------------------------------------------------------- */
+
+:root {
+  --review-amber: #F5A623;
+}
+
+/* -------------------------------------------------------------------------
+   Block
+   ---------------------------------------------------------------------- */
+
+.readiness-card {
+  background: var(--bg-surface);
+  border-radius: var(--radius-card);
+  padding: var(--spacing-6);
+  border: 1px solid var(--border);
+  color: var(--text-primary);
+}
+
+/* -------------------------------------------------------------------------
+   State modifiers
+   ---------------------------------------------------------------------- */
+
+/* READY — teal accent border + tinted background */
+.readiness-card--ready {
+  border-color: var(--accent);
+  background: var(--accent-dim);
+}
+
+/* NOT_YET — neutral border, secondary text to convey "not there yet" */
+.readiness-card--not-yet {
+  border-color: var(--border);
+  color: var(--text-secondary);
+}
+
+/* REVIEW — amber warning border (documented exception: amber not in token set) */
+.readiness-card--review {
+  border-color: var(--review-amber);
+}
+
+/* OFFLINE — muted border and text to signal degraded state */
+.readiness-card--offline {
+  border-color: var(--offline);
+  color: var(--offline);
+}
+
+/* TIMEOUT — danger border with reduced opacity to signal error */
+.readiness-card--timeout {
+  border-color: var(--danger);
+  opacity: 0.8;
+}
+
+/* NO_SESSION — neutral, instructional (inherits block defaults) */
+.readiness-card--no-session {
+  border-color: var(--border);
+  color: var(--text-secondary);
+}
