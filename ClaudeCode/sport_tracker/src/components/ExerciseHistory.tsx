@@ -33,19 +33,19 @@ export interface ExerciseHistoryProps {
 
 export function ExerciseHistory({ exerciseName, sessions, isOffline, lastSyncedAt }: ExerciseHistoryProps): React.ReactElement {
   return (
-    <div>
+    <div className="exercise-history">
       {isOffline && (
-        <div role="status" aria-label="offline indicator">
+        <div className="exercise-history__offline-banner" role="status" aria-label="offline indicator">
           {lastSyncedAt
             ? `Offline — data as of ${lastSyncedAt.toLocaleDateString()}`
-            : "Offline"}
+            : "You are offline — data may be outdated"}
         </div>
       )}
       {sessions.length === 0 ? (
         <p>{`No sessions logged yet for ${exerciseName}.`}</p>
       ) : (
-        <table>
-          <thead>
+        <table className="exercise-history__table">
+          <thead className="exercise-history__header">
             <tr>
               <th>Date</th>
               <th>Exercise</th>
@@ -58,7 +58,7 @@ export function ExerciseHistory({ exerciseName, sessions, isOffline, lastSyncedA
           <tbody>
             {sessions.map((session) =>
               session.entries.map((entry, idx) => (
-                <tr key={`${session.id}-${idx}`}>
+                <tr key={`${session.id}-${idx}`} className="exercise-history__row">
                   <td>{session.loggedAt.toLocaleDateString()}</td>
                   <td>{entry.exerciseName}</td>
                   <td>{entry.sets}</td>

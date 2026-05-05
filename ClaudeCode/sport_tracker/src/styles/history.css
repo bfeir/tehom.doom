@@ -1,0 +1,27 @@
+/* history.css — ExerciseHistory BEM styles */
+
+.exercise-history {
+  background: var(--bg-base);
+  padding: var(--spacing-4);
+}
+
+.exercise-history__header {
+  /* table header wrapper */
+}
+
+.exercise-history__table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.exercise-history__row {
+  border-bottom: 1px solid var(--border);
+}
+
+.exercise-history__offline-banner {
+  background: color-mix(in srgb, var(--danger) 15%, transparent);
+  padding: var(--spacing-3) var(--spacing-4);
+  width: 100%;
+  color: var(--danger);
+  box-sizing: border-box;
+}

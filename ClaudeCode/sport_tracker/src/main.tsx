@@ -70,7 +70,7 @@ function ChainPage(): React.ReactElement {
     userId: user?.id ?? "",
     track: "push",
   });
-  return <ProgressionChain chain={chain} currentExerciseId={currentExerciseId} />;
+  return <ProgressionChain chain={chain} currentExerciseId={currentExerciseId} isOffline={!navigator.onLine} />;
 }
 
 function SessionPage(): React.ReactElement {

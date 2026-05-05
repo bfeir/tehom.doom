@@ -4,6 +4,7 @@ import type { Exercise } from "../types/index.js";
 export interface ProgressionChainProps {
   chain: Exercise[];
   currentExerciseId: string | null;
+  isOffline?: boolean;
 }
 
 function EndOfChainMessage(): React.ReactElement {
@@ -69,7 +70,7 @@ function ExerciseListItem({
 }
 
 export function ProgressionChain(props: ProgressionChainProps): React.ReactElement {
-  const { chain, currentExerciseId } = props;
+  const { chain, currentExerciseId, isOffline = false } = props;
 
   const currentIndex = currentExerciseId
     ? chain.findIndex((exercise) => exercise.id === currentExerciseId)
@@ -84,6 +85,11 @@ export function ProgressionChain(props: ProgressionChainProps): React.ReactEleme
 
   return (
     <div className="progression-chain">
+      {isOffline && (
+        <div className="progression-chain__offline-banner" role="status" aria-label="offline indicator">
+          You are offline — data may be outdated
+        </div>
+      )}
       {isCurrentExerciseUntracked && <FreeTextOrientationMessage />}
       <ol className="progression-chain__list">
         {chain.map((exercise) => (

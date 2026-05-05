@@ -1,0 +1,29 @@
+/* chain.css — ProgressionChain BEM styles */
+
+.progression-chain {
+  background: var(--bg-base);
+  padding: var(--spacing-4);
+}
+
+.progression-chain__list {
+  padding: 0;
+  margin: 0;
+  list-style: none;
+}
+
+.progression-chain__item {
+  padding: var(--spacing-2) 0;
+}
+
+.progression-chain__item--current {
+  font-weight: bold;
+  color: var(--accent);
+}
+
+.progression-chain__offline-banner {
+  background: color-mix(in srgb, var(--danger) 15%, transparent);
+  padding: var(--spacing-3) var(--spacing-4);
+  width: 100%;
+  color: var(--danger);
+  box-sizing: border-box;
+}
