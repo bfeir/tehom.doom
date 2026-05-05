@@ -6,6 +6,7 @@ import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import supabase from "../lib/supabaseClient";
 import { useAuthStore } from "../stores/authStore";
+import "../styles/auth.css";
 
 type Mode = "signin" | "signup";
 
@@ -84,49 +85,54 @@ export function AuthScreen(): React.ReactElement {
   };
 
   return (
-    <main aria-label="Authentication">
-      <h1>Calisthenics Tracker</h1>
+    <main className="auth" aria-label="Authentication">
+      <div className="auth__card">
+        <h1 className="auth__title">Calisthenics Tracker</h1>
 
-      <form onSubmit={(e) => void handleSubmit(e)}>
-        <label htmlFor="email">Email</label>
-        <input
-          id="email"
-          type="email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          autoComplete="email"
-          required
-        />
+        <form onSubmit={(e) => void handleSubmit(e)}>
+          <label htmlFor="email">Email</label>
+          <input
+            className="auth__input"
+            id="email"
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            autoComplete="email"
+            required
+          />
 
-        <label htmlFor="password">Password</label>
-        <input
-          id="password"
-          type="password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          autoComplete={mode === "signin" ? "current-password" : "new-password"}
-          required
-        />
+          <label htmlFor="password">Password</label>
+          <input
+            className="auth__input"
+            id="password"
+            type="password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            autoComplete={mode === "signin" ? "current-password" : "new-password"}
+            required
+          />
 
-        {errorMessage && (
-          <p role="alert" aria-live="assertive">
-            {errorMessage}
-          </p>
-        )}
+          {errorMessage && (
+            <p className="auth__error" role="alert" aria-live="assertive">
+              {errorMessage}
+            </p>
+          )}
 
-        <button type="submit" disabled={isSubmitting}>
-          {mode === "signin" ? "Sign in" : "Create account"}
+          <button className="auth__button" type="submit" disabled={isSubmitting}>
+            {mode === "signin" ? "Sign in" : "Create account"}
+          </button>
+        </form>
+
+        <button
+          className="auth__toggle"
+          type="button"
+          onClick={() => setMode(mode === "signin" ? "signup" : "signin")}
+        >
+          {mode === "signin"
+            ? "Need an account? Sign up"
+            : "Already have an account? Sign in"}
         </button>
-      </form>
-
-      <button
-        type="button"
-        onClick={() => setMode(mode === "signin" ? "signup" : "signin")}
-      >
-        {mode === "signin"
-          ? "Need an account? Sign up"
-          : "Already have an account? Sign in"}
-      </button>
+      </div>
     </main>
   );
 }

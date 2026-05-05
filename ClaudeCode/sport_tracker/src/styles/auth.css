@@ -1,0 +1,61 @@
+/* src/styles/auth.css — Auth screen BEM styles (step 01-02) */
+
+.auth {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg-base);
+}
+
+.auth__card {
+  background: var(--bg-surface);
+  border-radius: var(--radius-card);
+  padding: var(--spacing-6);
+  border: 1px solid var(--border);
+  max-width: 400px;
+  width: 100%;
+}
+
+.auth__title {
+  color: var(--text-primary);
+  font-size: var(--font-size-heading);
+  font-weight: var(--font-weight-semi);
+  margin-bottom: var(--spacing-4);
+}
+
+.auth__input {
+  display: block;
+  width: 100%;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-button);
+  color: var(--text-primary);
+  padding: var(--spacing-3) var(--spacing-4);
+  height: var(--touch-target);
+  box-sizing: border-box;
+}
+
+.auth__button {
+  display: block;
+  width: 100%;
+  background: var(--accent);
+  color: var(--color-white);
+  height: var(--spacing-12);
+  border-radius: var(--radius-button);
+  font-weight: var(--font-weight-semi);
+  border: none;
+  cursor: pointer;
+}
+
+.auth__error {
+  color: var(--danger);
+  font-size: var(--font-size-label);
+}
+
+.auth__toggle {
+  background: none;
+  border: none;
+  color: var(--accent);
+  cursor: pointer;
+}
