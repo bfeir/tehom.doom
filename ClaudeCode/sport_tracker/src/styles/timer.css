@@ -1,0 +1,98 @@
+/* src/styles/timer.css
+   BEM styles for the RestTimer component.
+   Depends on design-tokens.css for all custom property values.
+*/
+
+/* -------------------------------------------------------------------------
+   Slide-in animation
+   ---------------------------------------------------------------------- */
+
+@keyframes timerSlideIn {
+  from {
+    transform: translateY(24px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+/* -------------------------------------------------------------------------
+   Block: timer
+   ---------------------------------------------------------------------- */
+
+.timer {
+  background: var(--bg-surface);
+  border-radius: var(--radius-card);
+  padding: var(--spacing-6);
+  border: 1px solid var(--border);
+  animation: timerSlideIn var(--animation-duration) ease-out;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--spacing-4);
+}
+
+/* -------------------------------------------------------------------------
+   Element: timer__display
+   ---------------------------------------------------------------------- */
+
+.timer__display {
+  font-size: var(--font-size-timer);
+  font-weight: var(--font-weight-bold);
+  color: var(--text-primary);
+  font-feature-settings: "tnum";
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+
+/* -------------------------------------------------------------------------
+   Element: timer__label
+   ---------------------------------------------------------------------- */
+
+.timer__label {
+  font-size: var(--font-size-label);
+  color: var(--text-secondary);
+}
+
+/* -------------------------------------------------------------------------
+   Element: timer__controls
+   ---------------------------------------------------------------------- */
+
+.timer__controls {
+  display: flex;
+  gap: var(--spacing-3);
+}
+
+/* -------------------------------------------------------------------------
+   Element: timer__btn
+   ---------------------------------------------------------------------- */
+
+.timer__btn {
+  min-width: var(--touch-target);
+  min-height: var(--touch-target);
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-button);
+  color: var(--text-primary);
+  cursor: pointer;
+}
+
+/* -------------------------------------------------------------------------
+   Modifier: timer--active
+   ---------------------------------------------------------------------- */
+
+.timer--active .timer__display {
+  color: var(--accent);
+}
+
+/* -------------------------------------------------------------------------
+   Reduced motion
+   ---------------------------------------------------------------------- */
+
+@media (prefers-reduced-motion: reduce) {
+  .timer {
+    animation-duration: 0ms;
+  }
+}
