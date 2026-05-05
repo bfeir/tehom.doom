@@ -1,0 +1,86 @@
+/* src/styles/home.css
+   BEM styles for HomeScreen component.
+   No hardcoded hex values — all colours from design tokens. */
+
+/* Root */
+.home {
+  display: flex;
+  flex-direction: column;
+  min-height: 100dvh;
+}
+
+/* Header */
+.home__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.75rem 1rem;
+  background: var(--bg-surface);
+  border-bottom: 1px solid var(--border);
+}
+
+/* Greeting text */
+.home__greeting {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+/* Sync badge */
+.home__sync-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.5rem;
+  height: 1.5rem;
+  padding: 0 0.375rem;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--bg-surface);
+  background: var(--accent);
+}
+
+.home__sync-badge--error {
+  background: var(--danger);
+}
+
+/* Scrollable content area — padded to avoid bottom nav overlap */
+.home__content {
+  flex: 1;
+  overflow-y: auto;
+  padding-bottom: calc(60px + env(safe-area-inset-bottom));
+}
+
+/* Fixed bottom navigation bar */
+.home__nav {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+  height: 60px;
+  background: var(--bg-surface);
+  border-top: 1px solid var(--border);
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+/* Individual nav item */
+.home__nav-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  flex: 1;
+  height: 100%;
+  color: var(--text-secondary);
+  text-decoration: none;
+  font-size: 0.75rem;
+  gap: 0.25rem;
+}
+
+.home__nav-item.active {
+  color: var(--accent);
+}

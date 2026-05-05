@@ -5,48 +5,78 @@
 import React from "react";
 import { NavLink, Outlet } from "react-router-dom";
 import { useAuthStore } from "../stores/authStore.js";
+import { useSessionStore } from "../stores/sessionStore.js";
 import { AddToHomeScreenBanner } from "./AddToHomeScreenBanner.js";
+import { greeting } from "../lib/greeting.js";
+import "../styles/home.css";
 
 export function HomeScreen(): React.ReactElement {
   const user = useAuthStore((s) => s.user);
+  const queueDepth = useSessionStore((s) => s.queueDepth);
+  const syncRetryAvailable = useSessionStore((s) => s.syncRetryAvailable);
+
+  const hour = new Date().getHours();
+  const greetingText = greeting(hour);
+
+  const syncStatus = syncRetryAvailable ? "error" : "syncing";
+  const hasPending = queueDepth > 0;
 
   return (
-    <div aria-label="Home">
+    <div className="home" aria-label="Home">
       <AddToHomeScreenBanner />
-      <header>
+      <header className="home__header">
+        <span className="home__greeting" aria-label="Greeting">
+          {greetingText}
+        </span>
         <span aria-label="User email">{user?.email ?? ""}</span>
+        {hasPending && (
+          <span
+            className={`home__sync-badge${syncStatus === "error" ? " home__sync-badge--error" : ""}`}
+            aria-label="Pending sync count"
+          >
+            {queueDepth}
+          </span>
+        )}
       </header>
 
-      <main>
+      <main className="home__content">
         <Outlet />
       </main>
 
-      <nav aria-label="Bottom navigation">
+      <nav className="home__nav" aria-label="Bottom navigation">
         <NavLink
           to="/session"
           aria-label="Session"
-          aria-current={({ isActive }) => (isActive ? "page" : undefined)}
+          className={({ isActive }) =>
+            `home__nav-item${isActive ? " active" : ""}`
+          }
         >
           Session
         </NavLink>
         <NavLink
           to="/history"
           aria-label="History"
-          aria-current={({ isActive }) => (isActive ? "page" : undefined)}
+          className={({ isActive }) =>
+            `home__nav-item${isActive ? " active" : ""}`
+          }
         >
           History
         </NavLink>
         <NavLink
           to="/chain"
           aria-label="Chain"
-          aria-current={({ isActive }) => (isActive ? "page" : undefined)}
+          className={({ isActive }) =>
+            `home__nav-item${isActive ? " active" : ""}`
+          }
         >
           Chain
         </NavLink>
         <NavLink
           to="/readiness"
           aria-label="Readiness"
-          aria-current={({ isActive }) => (isActive ? "page" : undefined)}
+          className={({ isActive }) =>
+            `home__nav-item${isActive ? " active" : ""}`
+          }
         >
           Readiness
         </NavLink>
