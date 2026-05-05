@@ -12,6 +12,7 @@ import { useSessionStore } from "../stores/sessionStore.js";
 import { SessionRepository } from "../repositories/SessionRepository.js";
 import supabaseClient from "../lib/supabaseClient.js";
 import type { Session, ExerciseEntry } from "../types/index.js";
+import "../styles/session.css";
 
 const sessionRepository = new SessionRepository(supabaseClient, false);
 
@@ -76,12 +77,14 @@ export function SessionScreen({
   });
   const { openSession } = useSessionStore();
   const [confirmClose, setConfirmClose] = useState(false);
+  const [doneIndices, setDoneIndices] = useState<Set<number>>(new Set());
 
   if (closedSession) {
     return <CloseSummary session={closedSession} />;
   }
 
-  const entryCount = currentSession?.entries?.length ?? 0;
+  const entries: ExerciseEntry[] = currentSession?.entries ?? [];
+  const entryCount = entries.length;
 
   function handleCloseRequest(): void {
     if (entryCount === 0) {
@@ -100,8 +103,20 @@ export function SessionScreen({
     setConfirmClose(false);
   }
 
+  function handleToggleDone(index: number): void {
+    setDoneIndices((prev) => {
+      const next = new Set(prev);
+      if (next.has(index)) {
+        next.delete(index);
+      } else {
+        next.add(index);
+      }
+      return next;
+    });
+  }
+
   return (
-    <div aria-label="Session screen">
+    <div className="session" aria-label="Session screen">
       {isLoading && <p aria-live="polite">Saving...</p>}
       {error && <p role="alert">{error}</p>}
 
@@ -110,6 +125,26 @@ export function SessionScreen({
         : <p aria-label="No session">No active session</p>}
 
       <p aria-label="Sets logged">{entryCount} set{entryCount !== 1 ? "s" : ""} logged</p>
+
+      {entries.map((entry, index) => {
+        const isDone = doneIndices.has(index);
+        const rowClass = isDone
+          ? "session__exercise session__exercise--done"
+          : "session__exercise";
+        return (
+          <div key={index} className={rowClass}>
+            <span className="session__exercise-name">{entry.exerciseName}</span>
+            <span className="session__sets">{entry.sets}</span>
+            <span className="session__reps">{entry.reps}</span>
+            <button
+              type="button"
+              className="session__complete-btn"
+              aria-label={`Mark ${entry.exerciseName} as done`}
+              onClick={() => handleToggleDone(index)}
+            />
+          </div>
+        );
+      })}
 
       <button
         type="button"

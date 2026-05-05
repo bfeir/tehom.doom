@@ -14,7 +14,7 @@
 import { describe, it, expect, vi, type Mock } from "vitest";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import type { Session } from "../../../src/types/index.js";
+import type { Session, ExerciseEntry } from "../../../src/types/index.js";
 
 // Mock Supabase client to prevent initialization error in test environment
 vi.mock("../../../src/lib/supabaseClient.js", () => ({
@@ -27,8 +27,30 @@ vi.mock("../../../src/lib/supabaseClient.js", () => ({
   },
 }));
 
+// Mock useSessionLogger to control currentSession in BEM tests
+vi.mock("../../../src/hooks/useSessionLogger.js", () => ({
+  useSessionLogger: vi.fn(),
+}));
+
+// Mock useSessionStore to prevent store side effects
+vi.mock("../../../src/stores/sessionStore.js", () => ({
+  useSessionStore: vi.fn(() => ({ openSession: null })),
+}));
+
 // Scaffold import — will throw until implemented
 import { SessionScreen } from "../../../src/components/SessionScreen.js";
+import { useSessionLogger } from "../../../src/hooks/useSessionLogger.js";
+import { beforeEach } from "vitest";
+
+// Default mock for useSessionLogger — keeps pre-existing tests working
+beforeEach(() => {
+  (useSessionLogger as unknown as Mock).mockReturnValue({
+    logSet: vi.fn(),
+    currentSession: null,
+    isLoading: false,
+    error: null,
+  });
+});
 
 // ---------------------------------------------------------------------------
 // Walking skeleton — first scenario (RED-ready)
@@ -248,4 +270,93 @@ describe("Session close summary groups entries by exercise name", () => {
       expect(syncElements.length).toBeGreaterThan(0);
     }
   );
+});
+
+// ---------------------------------------------------------------------------
+// Step 01-04 — BEM CSS class structure
+// Test budget: 4 behaviors × 2 = 8 max unit tests
+//   B1: root has class 'session'
+//   B2: exercise rows have class 'session__exercise'
+//   B3: complete button has class 'session__complete-btn'
+//   B4: completed exercise row has class 'session__exercise--done'
+// ---------------------------------------------------------------------------
+
+function makeEntry(overrides: Partial<ExerciseEntry> = {}): ExerciseEntry {
+  return {
+    exerciseId: "ex-pike",
+    exerciseName: "Pike Push-ups",
+    sets: 3,
+    reps: 8,
+    formQuality: null,
+    rpe: null,
+    ...overrides,
+  };
+}
+
+function setupSessionLoggerMock(entries: ExerciseEntry[] = []): void {
+  (useSessionLogger as unknown as Mock).mockReturnValue({
+    logSet: vi.fn(),
+    currentSession: entries.length > 0
+      ? { id: "s1", userId: "u1", isOpen: true, loggedAt: new Date(), syncedAt: null, entries }
+      : null,
+    isLoading: false,
+    error: null,
+  });
+}
+
+describe("SessionScreen BEM class structure (step 01-04)", () => {
+  /**
+   * B1: root element has class 'session'
+   * Given a user renders the SessionScreen
+   * When the root element is rendered
+   * Then it has className containing 'session'
+   */
+  it("root element renders with className containing 'session'", () => {
+    setupSessionLoggerMock();
+    const { container } = render(<SessionScreen sessionId="s1" userId="u1" />);
+    const root = container.firstElementChild as HTMLElement;
+    expect(root.className).toContain("session");
+  });
+
+  /**
+   * B2: each exercise row has class 'session__exercise'
+   * Given a session with one logged entry
+   * When rendered
+   * Then the exercise row has className 'session__exercise'
+   */
+  it("exercise row renders with className containing 'session__exercise'", () => {
+    setupSessionLoggerMock([makeEntry()]);
+    render(<SessionScreen sessionId="s1" userId="u1" />);
+    const exerciseRows = document.querySelectorAll(".session__exercise");
+    expect(exerciseRows.length).toBeGreaterThan(0);
+  });
+
+  /**
+   * B3: complete button has class 'session__complete-btn'
+   * Given a session with one logged entry
+   * When rendered
+   * Then the complete button has className 'session__complete-btn'
+   */
+  it("complete button renders with className containing 'session__complete-btn'", () => {
+    setupSessionLoggerMock([makeEntry()]);
+    render(<SessionScreen sessionId="s1" userId="u1" />);
+    const completeButtons = document.querySelectorAll(".session__complete-btn");
+    expect(completeButtons.length).toBeGreaterThan(0);
+  });
+
+  /**
+   * B4: completed exercise row has class 'session__exercise--done'
+   * Given a session with one entry
+   * When the user clicks the complete button for that exercise
+   * Then the row gains className 'session__exercise--done'
+   */
+  it("completed exercise row renders with className containing 'session__exercise--done'", async () => {
+    setupSessionLoggerMock([makeEntry()]);
+    const user = userEvent.setup();
+    render(<SessionScreen sessionId="s1" userId="u1" />);
+    const completeBtn = document.querySelector(".session__complete-btn") as HTMLButtonElement;
+    await user.click(completeBtn);
+    const doneRows = document.querySelectorAll(".session__exercise--done");
+    expect(doneRows.length).toBeGreaterThan(0);
+  });
 });

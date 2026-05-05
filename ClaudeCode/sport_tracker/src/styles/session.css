@@ -1,0 +1,46 @@
+/* Session screen — BEM styles */
+
+.session {
+  background: var(--bg-base);
+  min-height: 100vh;
+  padding: var(--spacing-4);
+}
+
+.session__exercise {
+  background: var(--bg-surface);
+  border-radius: var(--radius-card);
+  border: 1px solid var(--border);
+  padding: var(--spacing-4);
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-4);
+  min-height: var(--touch-target);
+}
+
+.session__exercise--done {
+  opacity: 0.5;
+}
+
+.session__exercise--done .session__exercise-name {
+  text-decoration: line-through;
+}
+
+.session__sets,
+.session__reps {
+  font-size: var(--font-size-set-count);
+  font-weight: var(--font-weight-semi);
+  color: var(--text-primary);
+  font-feature-settings: "tnum";
+}
+
+.session__complete-btn {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: var(--accent);
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
