@@ -78,9 +78,56 @@ function ChainPage(): React.ReactElement {
 function SessionPage(): React.ReactElement {
   const user = useAuthStore((s) => s.user);
   const openSession = useSessionStore((s) => s.openSession);
+  const setOpenSession = useSessionStore((s) => s.setOpenSession);
+  const [starting, setStarting] = React.useState(false);
+  const [startError, setStartError] = React.useState<string | null>(null);
+
+  async function handleStartSession(): Promise<void> {
+    if (!user) return;
+    setStarting(true);
+    setStartError(null);
+    try {
+      const isOffline = !navigator.onLine;
+      const repo = new SessionRepository(supabaseClient, isOffline);
+      const session = await repo.create(user.id);
+      setOpenSession(session);
+    } catch (err) {
+      setStartError(err instanceof Error ? err.message : "Could not start session");
+    } finally {
+      setStarting(false);
+    }
+  }
+
+  if (!openSession) {
+    return (
+      <div style={{ padding: "24px" }}>
+        {startError && <p role="alert" style={{ color: "var(--danger)" }}>{startError}</p>}
+        <button
+          type="button"
+          disabled={starting}
+          onClick={() => void handleStartSession()}
+          style={{
+            background: "var(--accent)",
+            color: "var(--color-white)",
+            border: "none",
+            borderRadius: "var(--radius-button)",
+            padding: "12px 24px",
+            fontSize: "var(--font-size-body)",
+            fontWeight: 600,
+            minHeight: "44px",
+            cursor: "pointer",
+            width: "100%",
+          }}
+        >
+          {starting ? "Starting…" : "Start Session"}
+        </button>
+      </div>
+    );
+  }
+
   return (
     <SessionScreen
-      sessionId={openSession?.id ?? ""}
+      sessionId={openSession.id}
       userId={user?.id ?? ""}
     />
   );
