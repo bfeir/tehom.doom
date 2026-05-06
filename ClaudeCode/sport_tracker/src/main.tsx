@@ -7,6 +7,7 @@ import './styles/design-tokens.css';
 import React from "react";
 import ReactDOM from "react-dom/client";
 import { createBrowserRouter, RouterProvider, Navigate } from "react-router-dom";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { OfflineQueue } from "./lib/offlineQueue.js";
 import { SyncCoordinator } from "./lib/syncCoordinator.js";
 import { setSyncCoordinator, useSessionStore } from "./stores/sessionStore.js";
@@ -173,11 +174,22 @@ initAuth(useAuthStore.getState());
 // React mount
 // ---------------------------------------------------------------------------
 
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      retry: 1,
+      staleTime: 30_000,
+    },
+  },
+});
+
 const rootElement = document.getElementById("root");
 if (rootElement) {
   ReactDOM.createRoot(rootElement).render(
     <React.StrictMode>
-      <RouterProvider router={router} />
+      <QueryClientProvider client={queryClient}>
+        <RouterProvider router={router} />
+      </QueryClientProvider>
     </React.StrictMode>
   );
 }
