@@ -1,0 +1,95 @@
+schema_version: 1
+# SSOT copy — canonical journey definition for product-level reference
+# Feature-level source: docs/feature/react-pwa-ui/discuss/journey-workout-session.yaml
+
+journey:
+  name: "Workout Session"
+  goal: "Log an entire workout session — sets, reps, notes — start rest timer, check readiness, and close the session — in a single app, without switching tools"
+  persona: "Marco — intermediate RR practitioner, 14 months training, outdoor park training"
+  product: "calisthenics-tracker-v1"
+  platform: "PWA (mobile-first, offline-capable)"
+  first_documented: "2026-04-21"
+  source_wave: "DISCUSS"
+
+  emotional_arc:
+    start: "Briefly uncertain (auth gate, first use only) — thereafter starts ready to train"
+    middle: "Efficient and in flow — repeating loop of log set → rest → readiness check"
+    end: "Satisfied and equipped — session saved, progress visible, next step clear in-app"
+
+  steps:
+    - id: 1
+      name: "Auth Gate"
+      action: "Sign in via Google OAuth or email/password; JWT issued by Supabase Auth"
+      frequency: "Once per device; thereafter bypassed until JWT expiry"
+      emotional_state: {entry: "Briefly uncertain", exit: "Authenticated and trusted"}
+
+    - id: 2
+      name: "Home / Session Dashboard"
+      action: "View recent sessions; tap Start New Session"
+      emotional_state: {entry: "Neutral", exit: "Ready to train"}
+
+    - id: 3
+      name: "Log a Set"
+      action: "Select exercise (autocomplete), enter sets and reps, optional form quality and note, tap Save"
+      emotional_state: {entry: "Ready, slightly rushed", exit: "Efficient — set logged, timer started"}
+
+    - id: 4
+      name: "Rest Timer"
+      action: "90-second countdown auto-starts; Marco rests; timer completes with ping"
+      emotional_state: {entry: "Calm, recovering", exit: "Ready for next set"}
+
+    - id: 5
+      name: "Readiness Card"
+      action: "On demand — view READY / NOT YET / REVIEW signal from fn-readiness-engine"
+      optional: true
+      emotional_state: {entry: "Curious", exit: "Informed — knows exactly what is needed"}
+
+    - id: 6
+      name: "Log Next Set (repeating)"
+      action: "Return to log screen (exercise pre-filled); repeat Steps 3-5"
+      emotional_state: {entry: "In flow", exit: "In flow — another set done"}
+
+    - id: 7
+      name: "Close Session"
+      action: "Tap Done; view summary; session saved and closed"
+      emotional_state: {entry: "Tired, post-workout", exit: "Satisfied — data captured"}
+
+    - id: 8
+      name: "Exercise History View"
+      action: "Navigate to History tab; select exercise; view last N sessions grid"
+      optional: true
+      emotional_state: {entry: "Oriented", exit: "Retrospectively aware"}
+
+    - id: 9
+      name: "Progression Chain View"
+      action: "Navigate to Progression tab; see current position; view next exercise and criteria"
+      optional: true
+      emotional_state: {entry: "Equipped", exit: "Confident — no external lookup needed"}
+
+  key_artifacts:
+    - jwt_token
+    - exercise_id
+    - session_id
+    - offline_queue_depth
+    - readiness_response
+    - signal_state
+    - timer_duration
+    - sets_completed
+    - history_rows
+    - current_exercise
+    - progression_chain
+
+  feature_stories:
+    - UI-01: "Auth (sign up / sign in)"
+    - UI-02: "Start and close a session"
+    - UI-03: "Log a set (exercise + sets x reps + qualitative note)"
+    - UI-04: "Readiness card display"
+    - UI-05: "Rest timer (90s default, start/stop)"
+    - UI-06: "Exercise history view (last N sessions)"
+    - UI-07: "Progression chain view (what comes next)"
+    - UI-08: "Offline session logging (queue + sync indicator)"
+
+changelog:
+  - date: "2026-04-21"
+    feature: "react-pwa-ui"
+    change: "Initial SSOT bootstrap from DISCUSS wave — new journey, not an extension of progression-decision"

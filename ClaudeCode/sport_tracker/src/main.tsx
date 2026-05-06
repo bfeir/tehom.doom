@@ -29,6 +29,8 @@ import { useProgressionChain } from "./hooks/useProgressionChain.js";
 // Page wrappers — connect hooks to presentational components
 // ---------------------------------------------------------------------------
 
+const DEFAULT_PLAN = "free" as const;
+
 function ReadinessPage(): React.ReactElement {
   const user = useAuthStore((s) => s.user);
   const currentExercise = useSessionStore((s) => s.currentExercise);
@@ -52,7 +54,7 @@ function HistoryPage(): React.ReactElement {
   const { sessions, isOffline, lastSyncedAt } = useExerciseHistory({
     userId: user?.id ?? "",
     exerciseId: currentExercise ?? "",
-    plan: "free",
+    plan: DEFAULT_PLAN,
   });
   return (
     <ExerciseHistory

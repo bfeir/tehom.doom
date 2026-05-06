@@ -8,6 +8,7 @@ import { useState } from "react";
 import type { SessionPort } from "../ports/SessionPort.js";
 import type { ExerciseEntry, Session } from "../types/index.js";
 import { useTimerStore } from "../stores/timerStore.js";
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { SessionRepository } from "../repositories/SessionRepository.js";
 
 const DEFAULT_REST_DURATION_MS = 90_000;
@@ -16,7 +17,7 @@ const DEFAULT_REST_DURATION_MS = 90_000;
  * Factory: returns a SessionPort backed by IndexedDB when offline,
  * or Supabase when online (SC-01: offline-first).
  */
-export function createSessionPort(supabaseClient: Parameters<typeof SessionRepository>[0]): SessionPort {
+export function createSessionPort(supabaseClient: SupabaseClient): SessionPort {
   const isOffline = typeof navigator !== "undefined" && !navigator.onLine;
   return new SessionRepository(supabaseClient, isOffline);
 }

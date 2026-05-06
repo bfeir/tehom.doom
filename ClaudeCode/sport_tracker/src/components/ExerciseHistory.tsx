@@ -1,5 +1,6 @@
 // src/components/ExerciseHistory.tsx
 import React from "react";
+import "../styles/history.css";
 
 const NOTE_MAX_LENGTH = 40;
 

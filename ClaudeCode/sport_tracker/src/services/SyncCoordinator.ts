@@ -2,7 +2,6 @@
 // This class runs outside the React tree as a boot-time singleton (AA5).
 
 import type { SessionPort } from "../ports/SessionPort.js";
-import type { ReadinessPort } from "../ports/ReadinessPort.js";
 import type { SyncStatus } from "../types/index.js";
 
 export class SyncCoordinator {
@@ -14,7 +13,8 @@ export class SyncCoordinator {
 
   constructor(
     private readonly sessionPort: SessionPort,
-    private readonly readinessPort: ReadinessPort
+    // readinessPort reserved for future v2 readiness-aware sync decisions
+    ..._args: unknown[]
   ) {}
 
   /**

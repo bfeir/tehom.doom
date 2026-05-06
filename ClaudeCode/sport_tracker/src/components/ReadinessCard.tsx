@@ -2,8 +2,6 @@ import React from "react";
 import type { ReadinessSignal } from "../types/index.js";
 import "../styles/readiness.css";
 
-export type ReadinessSignalDisplay = ReadinessSignal;
-
 export interface ReadinessCardProps {
   signal: ReadinessSignal | null;
   isOffline?: boolean;
@@ -38,7 +36,7 @@ function NoSessionMessage(): React.ReactElement {
   );
 }
 
-function NotYetCard({ signal }: { signal: ReadinessSignalDisplay }): React.ReactElement {
+function NotYetCard({ signal }: { signal: ReadinessSignal }): React.ReactElement {
   return (
     <div className="readiness-card readiness-card--not-yet">
       <h2>Not yet</h2>
@@ -55,7 +53,7 @@ function NotYetCard({ signal }: { signal: ReadinessSignalDisplay }): React.React
   );
 }
 
-function ReadyCard({ signal }: { signal: ReadinessSignalDisplay }): React.ReactElement {
+function ReadyCard({ signal }: { signal: ReadinessSignal }): React.ReactElement {
   return (
     <div className="readiness-card readiness-card--ready">
       <h2>Ready to advance!</h2>
@@ -70,7 +68,7 @@ function ReadyCard({ signal }: { signal: ReadinessSignalDisplay }): React.ReactE
   );
 }
 
-function ReviewCard({ signal }: { signal: ReadinessSignalDisplay }): React.ReactElement {
+function ReviewCard({ signal }: { signal: ReadinessSignal }): React.ReactElement {
   return (
     <div className="readiness-card readiness-card--review">
       <h2>Review your form</h2>

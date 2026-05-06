@@ -12,10 +12,8 @@ export function RestTimer(): React.ReactElement | null {
     return null;
   }
 
-  const rootClassName = `timer${isRunning ? " timer--active" : ""}`;
-
   return (
-    <div role="timer" aria-live="polite" className={rootClassName}>
+    <div role="timer" aria-live="polite" className="timer timer--active">
       <span className="timer__display">
         {formatRemaining(remaining)}
       </span>

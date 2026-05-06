@@ -55,7 +55,14 @@
   --transition-duration: 150ms;
   --animation-duration: 220ms;
 
+  /* Color — review state (amber — not adapted per theme) */
+  --review-amber: #F5A623;
+
+  /* Color — utility */
+  --color-white: #FFFFFF;
+
   /* Typography — font size */
+  --font-size-heading: 20px;
   --font-size-timer: 56px;
   --font-size-set-count: 32px;
   --font-size-body: 16px;

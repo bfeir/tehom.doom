@@ -1,0 +1,645 @@
+schema_version: 1
+
+journey:
+  name: "Workout Session"
+  goal: "Log an entire workout session — sets, reps, notes — start rest timer, check readiness, and close the session — in a single app, without switching tools, in under 60 seconds of active interaction per set"
+  persona: "Marco — intermediate RR practitioner, 14 months training, trains outdoors at a calisthenics park"
+  product: "react-pwa-ui (calisthenics-tracker-v1 UI layer)"
+  platform: "PWA, mobile-first, offline-first"
+  first_documented: "2026-04-21"
+  source_wave: "DISCUSS"
+  jobs_traced:
+    - JS-05  # Logging Without Tool Fragmentation
+    - JS-06  # Rest Timer Without Switching Apps
+    - JS-01  # Progression Readiness Decision
+    - JS-02  # Volume Tracking Without Manual Calculation
+    - JS-03  # RR Knowledge Access Without Research Detour
+
+  emotional_arc:
+    start: "Briefly uncertain — auth gate on first use; thereafter starts as 'ready to train'"
+    middle: "Efficient and in flow — logging sets, resting, checking readiness in a repeating loop"
+    end: "Satisfied and equipped — session saved, progress visible, what-comes-next answered in-app"
+
+  design_constraints:
+    - id: C1
+      constraint: "Session log entry completable in under 60 seconds per set"
+      source: "DISCOVER wave-decisions D6 — pen+paper chosen for speed; app must be faster"
+    - id: C2
+      constraint: "All session writes work offline; UI shows queued state silently"
+      source: "DISCOVER wave-decisions D5 — outdoor park confirmed, no guaranteed wifi"
+    - id: C3
+      constraint: "Rest timer is an in-app feature, not a link to an external timer"
+      source: "DISCOVER wave-decisions D3 — habitual separate clock app to be displaced"
+    - id: C4
+      constraint: "No social features — all user data isolated by RLS"
+      source: "DISCOVER wave-decisions D4 — friends = beta testers with separate accounts"
+
+steps:
+  - id: 1
+    name: "Auth Gate"
+    action: "Sign in with Google OAuth or email/password via Supabase Auth"
+    frequency: "Once per device (JWT persisted); re-triggered after expiry"
+
+    tui_mockup: |
+      +--------------------------------------------------+
+      | Calisthenics Tracker                             |
+      |                                                  |
+      |  Track your RR progression.                      |
+      |  Works offline. No spreadsheet required.         |
+      |                                                  |
+      |  [ Continue with Google ]                        |
+      |  [ Sign in with email ]                          |
+      |                                                  |
+      |  Don't have an account?  Create one              |
+      +--------------------------------------------------+
+
+    shared_artifacts:
+      - name: jwt_token
+        source: "Supabase Auth — issued on successful sign-in"
+        displayed_as: "Implicit — stored in supabase-js client, not shown"
+        consumers:
+          - "All PostgREST API calls (Authorization: Bearer)"
+          - "All Edge Function calls (Authorization: Bearer)"
+
+    emotional_state:
+      entry: "Briefly uncertain — is this safe, fast, worth it?"
+      exit: "Trust established — ready to train"
+
+    integration_checkpoint: |
+      Supabase Auth returns JWT. supabase-js client stores token.
+      All subsequent API calls include Authorization: Bearer header.
+      Verify: PostgREST 200 (not 401) on first session write after sign-in.
+
+    failure_modes:
+      - "OAuth provider unavailable — email fallback must be present"
+      - "Network offline during sign-in — show 'Sign-in requires a connection'"
+      - "Token expiry mid-session — auto-refresh via supabase-js; if fails, redirect to auth gate"
+
+    gherkin: |
+      Scenario: First-time sign-in via Google OAuth
+        Given Marco opens the app for the first time
+        When he taps "Continue with Google" and completes OAuth
+        Then he arrives at the home screen within 3 seconds
+        And his email is shown as confirmation
+
+      Scenario: Offline sign-in attempt
+        Given Marco has no connectivity
+        When he opens the app for the first time
+        Then he sees "Sign-in requires a connection" message
+        And the Google and email sign-in options are visible but disabled
+
+      Scenario: Returning user with valid session
+        Given Marco has signed in before and his JWT is valid
+        When he opens the app
+        Then he arrives directly at the home screen (no auth prompt)
+
+  - id: 2
+    name: "Home / Session Dashboard"
+    action: "View last sessions summary; tap Start New Session to begin logging"
+    frequency: "Every training session, typically 3-5 times per week"
+
+    tui_mockup: |
+      +--------------------------------------------------+
+      | Calisthenics Tracker       [2 queued ↑]         |
+      |                                                  |
+      |  Good morning, Marco.                            |
+      |  Last session: Pike Push-ups — 3d ago            |
+      |                                                  |
+      |  [ + Start New Session ]                         |
+      |                                                  |
+      |  ──────────  Recent  ──────────                  |
+      |  Pike Push-ups    3×8     3d ago                 |
+      |  Pull-up Negatives  3×5   5d ago                 |
+      |  Hollow Body     3×30s    5d ago                 |
+      |                                                  |
+      | [Log]  [History]  [Progression]                  |
+      +--------------------------------------------------+
+
+    shared_artifacts:
+      - name: recent_sessions
+        source: "sessions table — ordered by logged_at DESC, LIMIT 3, WHERE user_id = auth.uid()"
+        displayed_as: "${exercise_name} — ${sets}×${reps} — ${days_ago}d ago"
+        consumers:
+          - "Home screen recent list"
+          - "Log screen exercise pre-fill"
+      - name: offline_queue_depth
+        source: "IndexedDB offline queue length"
+        displayed_as: "[${n} queued ↑] badge in header"
+        consumers:
+          - "Home screen header"
+          - "Session close screen"
+
+    emotional_state:
+      entry: "Neutral — arriving from outside"
+      exit: "Ready — clear CTA, context is set"
+
+    integration_checkpoint: |
+      recent_sessions must match sessions table for user_id.
+      offline_queue_depth must match IndexedDB queue length.
+      Both must update on foreground reconnect (background sync event).
+
+    failure_modes:
+      - "No sessions yet — show empty state with 'Tap + to log your first set'"
+      - "Session open from previous crash — show 'Open session found. Continue or close it?'"
+      - "offline_queue_depth > 0 on reconnect — trigger sync and decrement badge"
+
+    gherkin: |
+      Scenario: Marco sees his recent sessions on home screen
+        Given Marco is signed in and has logged sessions previously
+        When he opens the app
+        Then he sees his 3 most recent sessions with exercise name, sets×reps, and days ago
+        And a "Start New Session" button is prominent above the list
+
+      Scenario: Empty state on first use
+        Given Marco has just signed up and logged no sessions
+        When he opens the home screen
+        Then he sees "No sessions yet. Tap + to log your first set."
+        And the "Start New Session" button is visible
+
+      Scenario: Offline queue badge visible
+        Given Marco logged 2 sessions offline at the park
+        When he opens the app without connectivity
+        Then he sees "[2 queued ↑]" in the header
+        And the badge disappears after reconnection and sync
+
+  - id: 3
+    name: "Log a Set"
+    action: "Select exercise (autocomplete), enter sets and reps, optional form quality and note, tap Save"
+    frequency: "3-9 times per session (one per exercise set pair)"
+
+    tui_mockup: |
+      +--------------------------------------------------+
+      | ← Session                         2 sets logged  |
+      |                                                  |
+      |  Exercise                                        |
+      |  [ Pike Push-ups (PPP)              ▼ ]          |
+      |                                                  |
+      |  Sets          Reps                              |
+      |  [ 3 ]         [ 8  ]                            |
+      |                                                  |
+      |  Form quality (optional)           RPE           |
+      |  [ ● ● ● ○ ○  Good ]              [ 6 ]         |
+      |                                                  |
+      |  Note (optional)                                 |
+      |  [ Felt strong, no shoulder pain      ]          |
+      |                                                  |
+      |  [ Save Set + Start Timer ]                      |
+      |                                                  |
+      +--------------------------------------------------+
+
+    shared_artifacts:
+      - name: exercise_id
+        source: "exercises registry — autocomplete match on slug/name"
+        displayed_as: "${exercise_name} in exercise picker"
+        consumers:
+          - "Session log entry (exercise_id field)"
+          - "Readiness card (exercise_id passed to fn-readiness-engine)"
+          - "History view (exercise_id filter)"
+          - "Progression chain (current exercise anchor)"
+      - name: session_entry
+        source: "sessions table row created on Save (or IndexedDB queue if offline)"
+        displayed_as: "Implicit — becomes ${sets_completed} counter"
+        consumers:
+          - "Rest timer (sets_completed display)"
+          - "Session close summary"
+          - "fn-readiness-engine (session_id input)"
+          - "HistoryService (history rows)"
+
+    emotional_state:
+      entry: "Ready, slightly rushed — between sets"
+      exit: "Efficient — one tap logged and timer started"
+
+    integration_checkpoint: |
+      session_entry written to Postgres (online) or IndexedDB (offline).
+      exercise_id must resolve to a valid exercises.id (or exercise_name for free-text).
+      On Save, fn-readiness-engine is NOT called immediately — deferred until session close or
+      explicit readiness card tap (to avoid blocking mid-workout UX).
+
+    failure_modes:
+      - "Exercise not in registry — free-text fallback accepted, exercise_id = NULL"
+      - "Offline — write to IndexedDB queue; show no error, no blocking"
+      - "Sets or reps = 0 — validation error: 'Enter at least 1 set and 1 rep'"
+      - "Note > 500 chars — truncate with warning"
+
+    gherkin: |
+      Scenario: Marco logs a set online with exercise autocomplete
+        Given Marco has an active session and is online
+        When he types "pike" in the exercise field, selects "Pike Push-ups (PPP)", enters 3 sets and 8 reps, and taps Save
+        Then the set is saved and the rest timer starts immediately
+        And the sets-logged counter increments to show his progress
+
+      Scenario: Marco logs a set offline at the park
+        Given Marco has no connectivity
+        When he enters exercise, sets, reps, and taps Save
+        Then the set is saved to the offline queue silently
+        And the rest timer starts immediately (no interruption to flow)
+        And the offline queue badge increments by 1
+
+      Scenario: Marco logs a free-text exercise not in the registry
+        Given Marco wants to log "Ring Dips" which is not in the registry
+        When he types "Ring Dips" and finds no autocomplete match
+        Then he can type the name freely and tap Save
+        And the set is saved with exercise_name = "Ring Dips" and exercise_id = null
+
+      Scenario: Marco enters zero reps
+        Given Marco is on the log screen
+        When he enters 0 in the reps field and taps Save
+        Then he sees "Enter at least 1 set and 1 rep" inline error
+        And the form is not submitted
+
+  - id: 4
+    name: "Rest Timer"
+    action: "90-second countdown auto-starts after saving a set; Marco rests and watches the timer"
+    frequency: "Once per set logged (same session loop as Step 3)"
+
+    tui_mockup: |
+      +--------------------------------------------------+
+      | Pike Push-ups — Set 3 of 3 saved                 |
+      |                                                  |
+      |           1:23                                   |
+      |        ┌────────┐                                |
+      |        │  REST  │    <- large, glanceable        |
+      |        └────────┘                                |
+      |                                                  |
+      |  [    Pause    ]   [  + 15s  ]  [  Skip  ]       |
+      |                                                  |
+      |  Default: 90 seconds  [ Change default ]         |
+      |                                                  |
+      | [Log]  [History]  [Progression]                  |
+      +--------------------------------------------------+
+
+    shared_artifacts:
+      - name: timer_duration
+        source: "User preference — 90s default; configurable per session"
+        displayed_as: "${mm}:${ss} countdown"
+        consumers:
+          - "Rest timer display"
+          - "Timer completion signal (haptic + audio ping)"
+      - name: sets_completed
+        source: "In-memory session state — count of saved entries for current session"
+        displayed_as: "Set ${n} of ${total} saved"
+        consumers:
+          - "Rest timer header"
+          - "Session close summary"
+
+    emotional_state:
+      entry: "Calm, recovering — just logged a set"
+      exit: "Ready for next set — timer ended, cue to continue"
+
+    integration_checkpoint: |
+      Timer must continue running if app is backgrounded (iOS/Android PWA).
+      On timer completion: haptic feedback + optional audio ping.
+      timer_duration must persist across session (not reset per set).
+      sets_completed must match IndexedDB / Postgres entry count.
+
+    failure_modes:
+      - "App backgrounded — timer continues in JS service worker; shows notification on expiry if permitted"
+      - "Browser tab hidden — timer continues via Web Worker or Page Visibility API"
+      - "User skips timer — no penalty; next set screen appears immediately"
+      - "Timer reaches 0 — gentle visual flash + ping; does not auto-navigate (user controls pace)"
+
+    gherkin: |
+      Scenario: Rest timer auto-starts after saving a set
+        Given Marco has just saved a set of Pike Push-ups
+        When the save completes
+        Then the rest timer starts immediately showing 1:30 countdown
+        And the timer display is large and glanceable
+
+      Scenario: Marco adjusts timer duration
+        Given Marco is on the rest timer screen
+        When he taps "Change default" and sets 2:00
+        Then subsequent timers in this session use 2:00 as default
+        And the change persists for future sessions
+
+      Scenario: Timer completes while app is in foreground
+        Given Marco's rest timer reaches 0
+        When the countdown ends
+        Then the screen shows a visual cue (color change or flash) and plays a ping
+        And the Log Set screen is accessible via the bottom nav (not auto-navigated)
+
+      Scenario: App backgrounded during rest timer
+        Given Marco switches to another app while the timer is running
+        When the timer reaches 0
+        Then Marco receives a notification (if permission granted): "Rest over — log your next set"
+
+  - id: 5
+    name: "Check Readiness Card"
+    action: "Tap Readiness from session screen; view READY / NOT YET / REVIEW signal with criterion detail"
+    frequency: "On demand, 0-2 times per session (mid-session curiosity or post-close)"
+
+    tui_mockup: |
+      +--------------------------------------------------+
+      | <- Session                   Readiness           |
+      |                                                  |
+      |  Pike Push-ups (PPP)                             |
+      |                                                  |
+      |  +--------------------------------------+        |
+      |  |  NOT YET                             |        |
+      |  |                                      |        |
+      |  |  Rep range: 3x5-8  ok  (you: 3x8)  |        |
+      |  |  Consecutive sessions: 2 / 3 needed  |        |
+      |  |                                      |        |
+      |  |  1 more session at 3x8+ to advance   |        |
+      |  +--------------------------------------+        |
+      |                                                  |
+      |  [ View Progression Chain ]                      |
+      |  [ View History ]                                |
+      |                                                  |
+      | [Log]  [History]  [Progression]                  |
+      +--------------------------------------------------+
+
+    shared_artifacts:
+      - name: readiness_response
+        source: "fn-readiness-engine Edge Function — called with session_id"
+        displayed_as: "${signal_state} headline + ${criterion_applied} detail + ${streak_current}/${streak_required}"
+        consumers:
+          - "Readiness card (primary display)"
+          - "History view (readiness badge per exercise)"
+      - name: signal_state
+        source: "fn-readiness-engine response.signal_state (READY | NOT YET | REVIEW)"
+        displayed_as: "Large headline text on readiness card"
+        consumers:
+          - "Readiness card headline"
+          - "Home screen exercise summary badge (v2)"
+
+    emotional_state:
+      entry: "Curious — 'did I hit the threshold?'"
+      exit: "Informed — 'I know exactly what I need next'"
+
+    integration_checkpoint: |
+      fn-readiness-engine called via Edge Function with session_id.
+      Response must include: signal_state, criterion_applied, streak_current, streak_required, next_exercise_id.
+      signal_state must be one of: READY, NOT_YET, REVIEW.
+      NOT YET must include gap description (N more sessions needed).
+      REVIEW must include form quality guidance.
+
+    failure_modes:
+      - "Offline — show 'Readiness check needs a connection. Session is saved.'"
+      - "fn-readiness-engine timeout (>5s) — show spinner then 'Could not compute readiness. Try again.'"
+      - "No prior sessions for exercise — show 'Log at least 1 session to see your readiness'"
+      - "Edge Function returns error — show human-readable message, not raw error code"
+
+    gherkin: |
+      Scenario: Marco checks readiness mid-session (NOT YET)
+        Given Marco has logged 2 sessions of Pike Push-ups at 3x8
+        When he taps the Readiness button during his session
+        Then he sees "NOT YET" with the criterion "2 of 3 consecutive sessions completed"
+        And the card shows "1 more session at 3x8+ to advance"
+
+      Scenario: Marco checks readiness and is READY
+        Given Marco has logged 3 consecutive sessions of Pike Push-ups at 3x8+
+        When he taps the Readiness button
+        Then he sees "READY" with "3 consecutive sessions at 3x5-8 — criteria met"
+        And a "View Progression Chain" button is prominent
+
+      Scenario: Readiness check attempted offline
+        Given Marco has no connectivity
+        When he taps the Readiness button
+        Then he sees "Readiness check needs a connection. Your session is saved."
+        And the rest of the session UI is unaffected
+
+  - id: 6
+    name: "Log Next Set (repeating loop)"
+    action: "Return to log screen; exercise pre-filled; enter reps, tap Save"
+    frequency: "Repeats Steps 3-5 for each superset pair — typically 3-5 repetitions per session"
+
+    tui_mockup: |
+      (Same as Step 3, with exercise pre-filled and sets_completed counter incremented)
+
+    shared_artifacts:
+      - name: last_exercise_id
+        source: "In-memory session state — last logged exercise_id"
+        displayed_as: "Pre-filled in exercise picker"
+        consumers:
+          - "Log screen exercise pre-fill"
+
+    emotional_state:
+      entry: "In flow — timer ended, ready to continue"
+      exit: "In flow — another set logged, timer restarts"
+
+    integration_checkpoint: |
+      last_exercise_id pre-fills exercise picker.
+      If user changes exercise, last_exercise_id updates to new exercise.
+      Each save increments sets_completed.
+
+    failure_modes:
+      - "Same as Step 3 failure modes (exercise not found, offline, validation)"
+
+    gherkin: |
+      Scenario: Exercise pre-fills from previous set
+        Given Marco just saved a set of Pike Push-ups
+        When the rest timer ends and he returns to the log screen
+        Then the exercise field is pre-filled with "Pike Push-ups (PPP)"
+        And sets and reps fields are empty (ready for new values)
+
+  - id: 7
+    name: "Close Session"
+    action: "Tap Done / Close Session; see summary; session closed and saved"
+    frequency: "Once per training session"
+
+    tui_mockup: |
+      +--------------------------------------------------+
+      | Session complete                                 |
+      |                                                  |
+      |  Today's sets                                    |
+      |  Pike Push-ups    3x8 x3 sets                   |
+      |  Pull-up Negative  3x5 x3 sets                  |
+      |                                                  |
+      |  [ Done - Close Session ]                        |
+      |                                                  |
+      |  Saved offline - will sync on reconnect  [up]   |
+      |                                                  |
+      | [Log]  [History]  [Progression]                  |
+      +--------------------------------------------------+
+
+    shared_artifacts:
+      - name: session_summary
+        source: "In-memory session state — all entries for current session"
+        displayed_as: "Table: exercise x sets x reps"
+        consumers:
+          - "Session close summary screen"
+      - name: sync_status
+        source: "IndexedDB queue depth + Supabase sync state"
+        displayed_as: "Saved / Saved offline - will sync on reconnect"
+        consumers:
+          - "Session close screen"
+          - "Home screen header badge"
+
+    emotional_state:
+      entry: "Tired, done, post-workout"
+      exit: "Satisfied — data captured, session closed"
+
+    integration_checkpoint: |
+      fn-readiness-engine may be called on session close (batch, not per-set).
+      Session close writes session close timestamp (if session model tracks open/close state).
+      sync_status updates on reconnect.
+
+    failure_modes:
+      - "Session already closed (crash + reopen) — 'Open session found. Continue or close it?'"
+      - "Offline — summary shown; sync queued; no error"
+      - "Empty session (no sets logged) — 'No sets logged. Close session without saving?'"
+
+    gherkin: |
+      Scenario: Marco closes a session after logging sets
+        Given Marco has logged 3 sets of Pike Push-ups and 3 sets of Pull-up Negatives
+        When he taps "Done - Close Session"
+        Then he sees a summary of all logged sets
+        And the session is marked closed
+
+      Scenario: Session close with offline queue
+        Given Marco trained offline and has 6 queued entries
+        When he taps "Done - Close Session"
+        Then he sees "Saved offline - will sync on reconnect"
+        And the session close is recorded locally
+
+      Scenario: Empty session close attempt
+        Given Marco started a session but logged no sets
+        When he taps "Done - Close Session"
+        Then he sees "No sets logged. Close session without saving?"
+        And can confirm or return to log
+
+  - id: 8
+    name: "Exercise History View"
+    action: "Navigate to History tab; select exercise; view last N sessions in grid"
+    optional: true
+    frequency: "Occasional — when checking volume trend or anomalies"
+
+    tui_mockup: |
+      +--------------------------------------------------+
+      | <- Back               Pike Push-ups (PPP)        |
+      |                                                  |
+      |  Last 5 sessions                                 |
+      |  +---------------------------------------------+ |
+      |  |  Date       Sets  Reps  Form  Note          | |
+      |  |  Apr 21     3     8     4/5   Strong        | |
+      |  |  Apr 18     3     8     3/5   Tired         | |
+      |  |  Apr 15     3     7     4/5   --            | |
+      |  |  Apr 12     3     6     3/5   A bit ill     | |
+      |  |  Apr 09     3     5     2/5   First try     | |
+      |  +---------------------------------------------+ |
+      |                                                  |
+      |  Readiness: NOT YET - 1 more session needed      |
+      |                                                  |
+      | [Log]  [History]  [Progression]                  |
+      +--------------------------------------------------+
+
+    shared_artifacts:
+      - name: history_rows
+        source: "HistoryService.findHistory() -> sessions WHERE user_id AND exercise_id ORDER BY logged_at DESC LIMIT 10"
+        displayed_as: "Table rows: date, sets, reps, form quality, note"
+        consumers:
+          - "History view table"
+
+    emotional_state:
+      entry: "Oriented — checking patterns"
+      exit: "Aware — sees volume trajectory"
+
+    integration_checkpoint: |
+      history_rows must be filtered by user_id AND exercise_id.
+      RLS enforces user isolation — PostgREST query cannot return other users' data.
+      Rows match what was entered in Step 3 (no data transformation).
+
+    failure_modes:
+      - "No sessions for exercise — 'No sessions logged yet for this exercise.'"
+      - "Offline — show cached sessions (service worker cache); badge indicates offline"
+
+    gherkin: |
+      Scenario: Marco views history for Pike Push-ups
+        Given Marco has logged 5 sessions of Pike Push-ups
+        When he navigates to History and selects Pike Push-ups
+        Then he sees the last 5 sessions with date, sets, reps, form quality, and note
+        And the readiness status is shown at the bottom
+
+      Scenario: History view while offline
+        Given Marco has no connectivity but has cached history
+        When he navigates to History
+        Then he sees cached session data
+        And an offline indicator is shown in the header
+
+  - id: 9
+    name: "Progression Chain View"
+    action: "Navigate to Progression tab; see current position in RR chain; view next exercise and criteria"
+    optional: true
+    frequency: "Occasional — when curious about what comes next or researching next exercise"
+
+    tui_mockup: |
+      +--------------------------------------------------+
+      | <- Back               Push Track                 |
+      |                                                  |
+      |  Wall Push-up         check Completed            |
+      |  Incline Push-up      check Completed            |
+      |  Standard Push-up     check Completed            |
+      |  Pike Push-up (PPP)   <- You are here           |
+      |  Pseudo Planche PU    -> Next                    |
+      |  Straddle Planche PU  . . .                     |
+      |                                                  |
+      |  Next: Pseudo Planche Push-up                    |
+      |  Criteria: 3x5-8 for 3 consecutive sessions      |
+      |  [ View full criteria ]                          |
+      |                                                  |
+      | [Log]  [History]  [Progression]                  |
+      +--------------------------------------------------+
+
+    shared_artifacts:
+      - name: current_exercise
+        source: "user_progression table — track = 'push', exercise_id for user"
+        displayed_as: "<- You are here marker on progression chain"
+        consumers:
+          - "Progression chain view (anchor)"
+          - "Readiness card (context)"
+      - name: progression_chain
+        source: "ProgressionRepository.getCurrentProgression() -> exercises WHERE track ORDER BY chain_order"
+        displayed_as: "Ordered list with completion status and current marker"
+        consumers:
+          - "Progression chain view"
+
+    emotional_state:
+      entry: "Equipped — sees the road ahead"
+      exit: "Confident — no need to open Reddit or RR wiki"
+
+    integration_checkpoint: |
+      current_exercise must match user_progression.exercise_id for correct track.
+      progression_chain exercises must be ordered by chain_order ascending.
+      next_exercise derived from chain_order = current + 1.
+      RR criteria for next_exercise sourced from exercises.rr_criteria (JSONB).
+
+    failure_modes:
+      - "Free-text exercise — 'This exercise is not in the RR registry. Browse the chain to find your position.'"
+      - "User at end of chain — 'You are at the end of the push progression. v2 will add advanced skills.'"
+      - "Offline — serve cached exercises registry (pre-fetched on app load)"
+
+    gherkin: |
+      Scenario: Marco views his position in the push progression chain
+        Given Marco's current push exercise is Pike Push-ups (PPP)
+        When he navigates to the Progression tab
+        Then he sees the full push chain with Pike Push-ups marked as current
+        And Pseudo Planche Push-up is marked as next with RR criteria visible
+
+      Scenario: Marco views progression for an exercise not in the registry
+        Given Marco logged a free-text exercise "Ring Dips"
+        When he views the Progression tab
+        Then he sees "Ring Dips is not in the RR progression registry"
+        And the standard push chain is shown so he can orient himself
+
+integration_validation:
+  shared_artifact_consistency:
+    - artifact: "exercise_id"
+      must_match_across: [3, 5, 8, 9]
+      failure_message: "exercise_id must be the same entity across log, readiness, history, and chain views — never a display alias"
+
+    - artifact: "user_id (via JWT)"
+      must_match_across: [1, 2, 3, 5, 7, 8, 9]
+      failure_message: "All data writes and reads must use auth.uid() — RLS enforces this at DB level; app must not pass user_id manually"
+
+    - artifact: "readiness_response"
+      must_match_across: [5, 8]
+      failure_message: "Readiness signal shown in history view must be consistent with readiness card — both call fn-readiness-engine with same session_id"
+
+    - artifact: "offline_queue_depth"
+      must_match_across: [2, 3, 4, 7]
+      failure_message: "Queue badge on home, log, and close screens must reflect same IndexedDB queue — single source, not cached"
+
+changelog:
+  - date: "2026-04-21"
+    feature: "react-pwa-ui"
+    change: "Initial journey schema produced by DISCUSS wave (Luna)"

@@ -1,0 +1,64 @@
+schema_version: 1
+# SSOT copy — canonical journey definition for product-level reference
+# Feature-level source: docs/feature/calisthenics-tracker-v1/discuss/journey-progression-decision.yaml
+
+journey:
+  name: "Progression Decision"
+  goal: "Make a confident decision about whether to advance to the next RR exercise — with a cited rationale — in under 2 minutes after a training session"
+  persona: "Marco — intermediate RR practitioner, 14 months training, follows r/BWF RR, used Google Sheets for 7 months"
+  product: "calisthenics-tracker-v1"
+  platform: "PWA (mobile-first, offline-capable)"
+  first_documented: "2026-04-13"
+  source_wave: "DISCUSS"
+
+  emotional_arc:
+    start: "Uncertain — just finished a set, wondering 'Was that enough to progress?'"
+    middle: "Curious then understanding — signal received, rationale read, data visible"
+    end: "Confident — clear decision made with cited rationale, no research required"
+
+  steps:
+    - id: 1
+      name: "Log the Session"
+      action: "Enter exercise (autocomplete), sets/reps, optional form quality and RPE, tap Save"
+      emotional_state: {entry: "Neutral / post-workout", exit: "Neutral / routine"}
+
+    - id: 2
+      name: "View Readiness Signal"
+      action: "Read headline signal (READY / NOT YET / REVIEW) and criterion summary"
+      emotional_state: {entry: "Neutral", exit: "Curious"}
+
+    - id: 3
+      name: "Read the Rationale"
+      action: "Expand rationale accordion — session evidence table + RR wiki citation"
+      emotional_state: {entry: "Curious", exit: "Understanding"}
+
+    - id: 4
+      name: "Decision Made"
+      action: "Advance to next exercise OR note the gap for next session"
+      emotional_state: {entry: "Understanding", exit: "Confident"}
+
+    - id: 5
+      name: "View Progression Tree (Optional)"
+      action: "Browse the RR exercise chain, see current position, view criteria per exercise"
+      optional: true
+      emotional_state: {entry: "Confident", exit: "Oriented and equipped"}
+
+  key_artifacts:
+    - exercise_id
+    - rr_criteria
+    - session_record
+    - readiness_signal
+    - current_exercise
+    - progression_event
+    - rr_progression_chain
+
+  feature_stories:
+    - US-01: "Session Logger"
+    - US-02: "Progression Readiness Signal"
+    - US-03: "Progress History View"
+    - US-04: "RR Progression Tree Navigator"
+    - US-05: "Plateau Early Warning"
+
+changelog:
+  - date: "2026-04-13"
+    change: "Initial SSOT bootstrap from DISCUSS wave artifacts"

@@ -56,32 +56,32 @@ export function AuthScreen(): React.ReactElement {
     setIsSubmitting(true);
     setLoading(true);
 
-    if (!navigator.onLine) {
-      setErrorMessage(
-        "Sign-in requires a connection. Please connect and try again."
-      );
+    try {
+      if (!navigator.onLine) {
+        setErrorMessage(
+          "Sign-in requires a connection. Please connect and try again."
+        );
+        return;
+      }
+
+      const authCall =
+        mode === "signin"
+          ? supabase.auth.signInWithPassword({ email, password })
+          : supabase.auth.signUp({ email, password });
+
+      const { data, error } = await authCall;
+
+      if (error) {
+        setErrorMessage(mapAuthError(error));
+      } else if (data.session?.user) {
+        setUser({ id: data.session.user.id, email: data.session.user.email ?? "" });
+      } else if (mode === "signup" && data.user && !data.session) {
+        setErrorMessage("Check your email and click the confirmation link to complete sign-up.");
+      }
+    } finally {
       setIsSubmitting(false);
       setLoading(false);
-      return;
     }
-
-    const authCall =
-      mode === "signin"
-        ? supabase.auth.signInWithPassword({ email, password })
-        : supabase.auth.signUp({ email, password });
-
-    const { data, error } = await authCall;
-
-    if (error) {
-      setErrorMessage(mapAuthError(error));
-    } else if (data.session?.user) {
-      setUser({ id: data.session.user.id, email: data.session.user.email ?? "" });
-    } else if (mode === "signup" && data.user && !data.session) {
-      setErrorMessage("Check your email and click the confirmation link to complete sign-up.");
-    }
-
-    setIsSubmitting(false);
-    setLoading(false);
   };
 
   return (

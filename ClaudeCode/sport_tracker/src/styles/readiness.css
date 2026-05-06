@@ -1,18 +1,8 @@
 /* src/styles/readiness.css
    BEM styles for the ReadinessCard component.
    All color values use CSS custom properties from design-tokens.css.
-   Exception: --review-amber (#F5A623) is defined locally — amber is not in
-   the token set and using a hex literal here is the documented exception for
-   this file only.
+   --review-amber is defined in design-tokens.css.
 */
-
-/* -------------------------------------------------------------------------
-   Local token — amber for REVIEW state (not in global token set)
-   ---------------------------------------------------------------------- */
-
-:root {
-  --review-amber: #F5A623;
-}
 
 /* -------------------------------------------------------------------------
    Block

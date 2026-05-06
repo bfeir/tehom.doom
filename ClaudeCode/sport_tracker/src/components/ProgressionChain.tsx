@@ -1,5 +1,6 @@
 import React from "react";
 import type { Exercise } from "../types/index.js";
+import "../styles/chain.css";
 
 export interface ProgressionChainProps {
   chain: Exercise[];
@@ -58,7 +59,7 @@ function ExerciseListItem({
 }): React.ReactElement {
   return (
     <li
-      className={["progression-chain__item", isCurrent && "progression-chain__item--current"].filter(Boolean).join(" ")}
+      className={`progression-chain__item${isCurrent ? " progression-chain__item--current" : ""}`}
       aria-current={isCurrent ? "step" : undefined}
     >
       {exercise.name}

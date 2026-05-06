@@ -1,0 +1,262 @@
+{
+  "roadmap": {
+    "project_id": "react-pwa-ui",
+    "created_at": "2026-04-27T07:43:57Z",
+    "total_steps": 12,
+    "phases": 4
+  },
+  "phases": [
+    {
+      "id": "01",
+      "name": "Walking Skeleton \u2014 Session Lifecycle Foundation",
+      "steps": [
+        {
+          "id": "01-01",
+          "name": "SessionPort wiring: create, addEntry, close against real Supabase",
+          "description": "Wire the SessionPort primary port through to real Supabase (PostgREST). Implement SessionPort.create(), addEntry(), and close() in the SessionScreen scaffold so the first walking-skeleton scenario passes end-to-end with real I/O. This is the foundation all other steps build on.",
+          "criteria": "Given Marco taps 'Start New Session', when he adds one set entry and taps 'Done \u2014 Close Session', then a sessions row is created in Supabase with correct user_id, the entry is persisted as a session entry row linked to that session, and the session is marked closed. Session transitions to log screen within 500ms of tap.",
+          "test_file": "tests/acceptance/react-pwa-ui/us-02-session-lifecycle.test.ts",
+          "scenario_name": "Marco completes a full session from start to close (WS)",
+          "files_to_modify": [
+            "src/components/SessionScreen.tsx",
+            "src/hooks/useSessionLogger.ts",
+            "src/stores/sessionStore.ts",
+            "src/lib/supabaseClient.ts"
+          ],
+          "estimated_hours": 4,
+          "dependencies": [],
+          "implementation_notes": "Strategy B: real Supabase via .env.test for all session I/O. fn-readiness-engine is NOT called in this step (WD-02). Tag test @walking_skeleton @real-io. SessionPort is the primary port; Supabase PostgREST adapter is the driven adapter. useSessionLogger hook must not call ReadinessPort (enforced in useSessionLogger.test.ts per DT-03)."
+        },
+        {
+          "id": "01-02",
+          "name": "Set logging with domain validation (exercise, sets, reps)",
+          "description": "Implement the set-logging domain rules inside the SessionPort adapter: non-zero reps, non-zero sets, form_quality 1-5 range, nullable exercise_id for free-text entries. Replace scaffolded stubs with real validation in useSessionLogger and SessionScreen form.",
+          "criteria": "Given a set entry with a registered exercise (exercise_id populated), sets=3, reps=8, when saved, the entry is written to Supabase and the timer starts within 200ms. Given sets=0 or reps=0, the save is rejected with an inline validation error and the form is not submitted. Given form_quality=6, the save is rejected. Given a free-text exercise name with no autocomplete match, the entry is saved with exercise_name populated and exercise_id null.",
+          "test_file": "tests/acceptance/react-pwa-ui/us-03-set-logging.test.ts",
+          "scenario_name": "Set logged with registered exercise, sets, and reps",
+          "files_to_modify": [
+            "src/components/SessionScreen.tsx",
+            "src/hooks/useSessionLogger.ts"
+          ],
+          "estimated_hours": 3,
+          "dependencies": [
+            "01-01"
+          ],
+          "implementation_notes": "Domain validation belongs in the port/service layer, not the component. Exercise autocomplete reads from the exercises table pre-fetched by the service worker. form_quality maps to SMALLINT 1-5; rpe maps to SMALLINT 1-10 \u2014 both optional. Timer auto-start (WD-03) is wired here: useSessionLogger calls timerStore.start() after addEntry resolves. DT-04 enforcement: verify mockTimerStart is called after addEntry in useSessionLogger.test.ts."
+        },
+        {
+          "id": "01-03",
+          "name": "Rest timer: computeRemaining pure function and useRestTimer hook",
+          "description": "Implement the computeRemaining pure function (ADR-010 invariant: remaining = duration - (Date.now() - startedAt)) and the useRestTimer hook that reads timerStore. Wire RestTimer scaffold to timerStore. Implement extend (+15s) and skip controls.",
+          "criteria": "Given the timer is started and the app is backgrounded for 60s then foregrounded, the displayed remaining time is accurate (not inflated). Given remaining reaches 0, it is clamped to 0 and never shows a negative value. Given Marco taps '+15s', the displayed remaining increases by 15s. Given Marco taps Skip, the timer stops and disappears from the screen.",
+          "test_file": "tests/acceptance/react-pwa-ui/us-05-rest-timer.test.ts",
+          "scenario_name": "Remaining computed from anchor, not tick count (ADR-010)",
+          "files_to_modify": [
+            "src/components/RestTimer.tsx",
+            "src/hooks/useRestTimer.ts",
+            "src/stores/timerStore.ts"
+          ],
+          "estimated_hours": 3,
+          "dependencies": [
+            "01-02"
+          ],
+          "implementation_notes": "computeRemaining is a pure function \u2014 no fixtures, no Supabase, no IndexedDB required. Test in isolation per DT-05. timerStore shape: {startedAt: number | null, duration: number, isRunning: boolean}. Remaining is computed in useRestTimer, never stored. Web Worker (timer.worker.ts) is preferred for tick delivery but the architectural invariant is the anchor pattern, not the thread. MM:SS formatter: 90000ms => '1:30'. Default duration persisted in localStorage."
+        }
+      ]
+    },
+    {
+      "id": "02",
+      "name": "Core Domain Services \u2014 Readiness, History, and Progression",
+      "steps": [
+        {
+          "id": "02-01",
+          "name": "Readiness card: NOT YET / READY / REVIEW signal display",
+          "description": "Implement the ReadinessCard component and useReadinessSignal hook. Call fn-readiness-engine only on card tap (never on set save). Render the three signal states with correct copy. Handle offline state and Edge Function timeout gracefully.",
+          "criteria": "Given Marco has 2 of 3 consecutive sessions at rep range, when he taps the Readiness button, the card shows 'NOT YET' with streak_current=2, streak_required=3. Given 3 consecutive sessions met, the card shows 'READY' with a 'View Progression Chain' CTA. Given form_quality below threshold, the card shows 'REVIEW' with form guidance copy. Given no network, the card shows 'Readiness check needs a connection. Your session is saved.' with no error code. Given fn-readiness-engine returns after 5s, a retry-able error message is shown. Readiness card does not trigger on set save (WD-02 contract).",
+          "test_file": "tests/acceptance/react-pwa-ui/us-04-readiness-card.test.ts",
+          "scenario_name": "NOT YET signal shows streak count and criterion (2 of 3)",
+          "files_to_modify": [
+            "src/components/ReadinessCard.tsx",
+            "src/hooks/useReadinessSignal.ts"
+          ],
+          "estimated_hours": 3,
+          "dependencies": [
+            "01-01"
+          ],
+          "implementation_notes": "fn-readiness-engine is the 'costly' adapter (DT-01 WS strategy B). Use vi.mock for component/unit tests; tag integration tests @requires_external. signal_state enum: READY | NOT_YET | REVIEW (exact strings from Edge Function contract). Edge Function timeout: spinner at 2s, error at 5s. Readiness card must not block timer (DT-03, DT-04): navigating to readiness card while timer is running must not stop the timer. useReadinessSignal.test.ts verifies no ReadinessPort call on set save."
+        },
+        {
+          "id": "02-02",
+          "name": "Exercise history view: tabular format with 30-day free-tier filter",
+          "description": "Implement the ExerciseHistory component and useExerciseHistory hook. Query Supabase for session entries filtered by exercise_id, user_id (RLS), and a 30-day window (free-plan constraint). Render as a table ordered by date descending. Handle empty state and offline indicator.",
+          "criteria": "Given Marco has sessions in the last 30 days, the history view shows them as a table ordered by date descending with columns: date, exercise, sets, reps, form_quality, note. Given a session older than 30 days, it is excluded from the table. Given an empty history, an empty-state message is shown (no blank screen). Given a note longer than 40 characters, it is truncated with an ellipsis. Given offline, the last sync date is shown. Marco's history excludes Luis's sessions (RLS enforced by Supabase).",
+          "test_file": "tests/acceptance/react-pwa-ui/us-06-exercise-history.test.ts",
+          "scenario_name": "History shows sessions as tabular data ordered by date (WD-04)",
+          "files_to_modify": [
+            "src/components/ExerciseHistory.tsx",
+            "src/hooks/useExerciseHistory.ts"
+          ],
+          "estimated_hours": 3,
+          "dependencies": [
+            "01-01"
+          ],
+          "implementation_notes": "WD-04 contract: history renders as tabular data, no charts in v1. Free-plan window: WHERE created_at >= now() - interval '30 days'. RLS enforced at Postgres level (user_id = auth.uid()) \u2014 no application-level filter needed, but test explicitly confirms isolation. TanStack Query used for server state caching. Offline indicator shows last successful sync timestamp from sessionStore."
+        },
+        {
+          "id": "02-03",
+          "name": "Progression chain view: current exercise ordered by chain_order",
+          "description": "Implement the ProgressionChain component and useProgressionChain hook. Query the exercise registry for the chain containing the current exercise, ordered by chain_order ascending. Show current exercise, next exercise with RR criteria and wiki URL, and handle end-of-chain gracefully.",
+          "criteria": "Given Marco is on Pike Push-ups, the chain view shows exercises ordered by chain_order with the current exercise highlighted. Given a next exercise exists, its rr_wiki_url and advancement criteria are shown. Given all exercises have rr_wiki_url populated (SC-03 attribution). Given chain_order has no gaps, exercises are displayed contiguously. Given Marco is at the end of the chain, the next-exercise slot shows an appropriate message rather than blank. Given a free-text exercise (no exercise_id), an orientation message is shown and the chain is still rendered for reference. Given offline, the chain loads from the cached exercise registry.",
+          "test_file": "tests/acceptance/react-pwa-ui/us-07-progression-chain.test.ts",
+          "scenario_name": "Chain shows current exercise and is ordered by chain_order",
+          "files_to_modify": [
+            "src/components/ProgressionChain.tsx",
+            "src/hooks/useProgressionChain.ts"
+          ],
+          "estimated_hours": 2,
+          "dependencies": [
+            "02-01"
+          ],
+          "implementation_notes": "Exercise registry is pre-fetched and cached by the service worker (StaleWhileRevalidate strategy per DD-05). useProgressionChain reads from the TanStack Query cache first, then Supabase. chain_order is contiguous integers with no gaps (validated by scenario 6). The 'View Progression Chain' CTA from the READY readiness card deep-links here using next_exercise_id from the fn-readiness-engine response."
+        }
+      ]
+    },
+    {
+      "id": "03",
+      "name": "Navigation and Auth \u2014 Routing, Sign-In, Sign-Up",
+      "steps": [
+        {
+          "id": "03-01",
+          "name": "Auth: returning user bypass, sign-in, sign-up, JWT session management",
+          "description": "Implement the AuthScreen component and SupabaseAuthAdapter. Wire Supabase Auth (Google OAuth + email/password) to authStore (Zustand). Implement RequireAuth route guard. Handle returning user bypass, offline first-time open, and plain-language error messages.",
+          "criteria": "Given Marco has a valid JWT from a previous session, when he opens the app, he arrives at the home screen without seeing the auth screen. Given Luis completes email sign-up, his account is created and a confirmation email is sent; his data is isolated from Marco's by RLS. Given Marco attempts sign-in offline for the first time, he sees 'Sign-in requires a connection. Please connect to the internet and try again.' with no raw error code. Given invalid credentials, a plain-language message is shown (no HTTP status codes, no stack traces). Given JWT expires mid-session, auto-refresh is attempted; if it fails, offline queue entries are preserved.",
+          "test_file": "tests/acceptance/react-pwa-ui/us-01-auth.test.ts",
+          "scenario_name": "Returning user bypasses auth screen on app reopen",
+          "files_to_modify": [
+            "src/components/AuthScreen.tsx",
+            "src/components/HomeScreen.tsx",
+            "src/lib/supabaseClient.ts"
+          ],
+          "estimated_hours": 3,
+          "dependencies": [
+            "01-01"
+          ],
+          "implementation_notes": "SupabaseAuthAdapter wraps supabase.auth.onAuthStateChange() as a boot-time singleton (DD-07). Writes to authStore on SIGNED_IN, SIGNED_OUT, TOKEN_REFRESHED events. RequireAuth wrapper reads authStore.isAuthenticated and redirects to /auth. Route definitions use React Router v6 createBrowserRouter in src/main.tsx (DD-06). JWT storage handled by supabase-js (localStorage). Auth is intentionally deferred to step 03-01 (after domain logic) per DT-07 implementation order."
+        },
+        {
+          "id": "03-02",
+          "name": "React Router v6 routes and bottom navigation wiring",
+          "description": "Define all 6 application routes in src/main.tsx using createBrowserRouter. Wire bottom navigation in HomeScreen to /session, /readiness, /history, /chain, /auth routes. Implement open session detection on app load (prompt to continue or discard). Implement empty session close confirmation guard.",
+          "criteria": "Given Marco taps 'Start New Session', the log screen appears within 500ms. Given Marco has an open session from a previous launch, on app load he sees 'Open session found from [date]. Continue or close it?' and can choose either action. Given Marco taps 'Done \u2014 Close Session' with zero sets logged, he sees a confirmation prompt before close; no empty session record is persisted. Given Marco navigates to the readiness card while the rest timer is running, the timer is not stopped. Given six routes exist (/auth, /home, /session, /readiness, /history, /chain), RequireAuth guards all routes except /auth.",
+          "test_file": "tests/acceptance/react-pwa-ui/us-02-session-lifecycle.test.ts",
+          "scenario_name": "Marco completes a full session from start to close (WS)",
+          "files_to_modify": [
+            "src/components/HomeScreen.tsx",
+            "src/components/SessionScreen.tsx"
+          ],
+          "estimated_hours": 2,
+          "dependencies": [
+            "03-01"
+          ],
+          "implementation_notes": "Open session detection: check IndexedDB for session_status='open' on app load (session persisted in IndexedDB for crash recovery per UI-02 technical notes). No route-level data loaders in v1 \u2014 all data fetching in hooks (DD-06). Bottom navigation tab bar must meet 44x44px touch target minimum (SC-06). Crash-recovery continue path must not create duplicate sessions (test scenario 9 in us-02)."
+        },
+        {
+          "id": "03-03",
+          "name": "Session close summary and crash-recovery continue path",
+          "description": "Implement session close summary screen showing all logged sets (exercise, total sets, reps). Implement crash-recovery continue path that rehydrates session state from IndexedDB without creating a duplicate session. Implement empty-session close guard.",
+          "criteria": "Given Marco has logged 3 sets of Pike Push-ups and 3 sets of Pull-up Negatives, when he taps 'Done \u2014 Close Session', he sees a summary listing each exercise with total sets and reps. Given an open session exists after crash, tapping Continue rehydrates the session without creating a new session row in Supabase. Given Marco has an open session found on relaunch and taps discard, the session is closed with no sets added and no empty record persists. Given Marco closes a session while offline, the summary shows 'Saved offline \u2014 will sync on reconnect' with queue count.",
+          "test_file": "tests/acceptance/react-pwa-ui/us-02-session-lifecycle.test.ts",
+          "scenario_name": "Marco completes a full session from start to close (WS)",
+          "files_to_modify": [
+            "src/components/SessionScreen.tsx",
+            "src/stores/sessionStore.ts"
+          ],
+          "estimated_hours": 2,
+          "dependencies": [
+            "03-02"
+          ],
+          "implementation_notes": "Session summary is a modal or dedicated screen \u2014 no new route needed. Crash recovery reads IndexedDB session with status='open', rehydrates sessionStore, and does NOT call SessionPort.create() again (to prevent duplicates). sessionStore.rehydrate() method reads from IndexedDB; sessionStore.close() calls SessionPort.close() and clears store. Offline close: write close event to IndexedDB queue; show sync-pending indicator from queue depth."
+        }
+      ]
+    },
+    {
+      "id": "04",
+      "name": "Offline Resilience \u2014 IndexedDB Queue, Sync, and PWA",
+      "steps": [
+        {
+          "id": "04-01",
+          "name": "IndexedDB offline queue: silent write within 500ms (Dexie.js)",
+          "description": "Implement the offline queue using Dexie.js (DD-04). When navigator.onLine is false, addEntry writes to the IndexedDB offline_sessions store instead of Supabase. Write must complete within 500ms with no user-visible disruption. Queue depth is readable by UI for badge display.",
+          "criteria": "Given Marco has no network, when he logs a set, the entry is accepted and appears in the current session's list within 500ms \u2014 no error or warning is shown. Given 2 sets are logged offline, both appear in the session list. Given the app is restarted while offline, previously logged sets are still visible (not lost). Given device storage is nearly full, a clear error message is shown instead of silent data loss.",
+          "test_file": "tests/acceptance/react-pwa-ui/us-08-offline-logging.test.ts",
+          "scenario_name": "Offline addEntry writes to queue silently within 500ms",
+          "files_to_modify": [
+            "src/lib/offlineQueue.ts",
+            "src/hooks/useSessionLogger.ts"
+          ],
+          "estimated_hours": 4,
+          "dependencies": [
+            "01-02"
+          ],
+          "implementation_notes": "Use fake-indexeddb for unit tests (speed); real Dexie.js for integration tests (DT-01 WS strategy B). IndexedDB store: offline_sessions with key path id, indexes by_userId and by_queuedAt (DD-03). QueuedSession type extends Session with queuedAt: Date and syncAttempts: number. useSessionLogger detects navigator.onLine and routes writes accordingly. SC-01: all session writes are offline-first by design \u2014 online write is the optimistic path, queue is always the durable path."
+        },
+        {
+          "id": "04-02",
+          "name": "SyncCoordinator: replay queue in chronological order on reconnect",
+          "description": "Implement SyncCoordinator as a boot-time singleton that listens for online events and drains the IndexedDB queue by replaying sessions to Supabase in ascending queuedAt order. Handle sync failures with badge persistence and tap-to-retry. Prevent duplicate sessions on partial-online sync.",
+          "criteria": "Given queued sessions exist and the device comes online, SyncCoordinator replays them to Supabase in chronological order. Given a sync failure, the queue badge remains visible and no user-visible error is shown during retries. Given max retries exceeded, a tap-to-retry message becomes available. Given some sets were logged online and some offline in the same session, online sets are not duplicated on sync. Given the real Supabase integration test tagged @requires_external, sync replays correctly end-to-end.",
+          "test_file": "tests/acceptance/react-pwa-ui/us-08-offline-logging.test.ts",
+          "scenario_name": "Offline addEntry writes to queue silently within 500ms",
+          "files_to_modify": [
+            "src/lib/offlineQueue.ts",
+            "src/stores/sessionStore.ts"
+          ],
+          "estimated_hours": 4,
+          "dependencies": [
+            "04-01"
+          ],
+          "implementation_notes": "SyncCoordinator runs outside the React tree as a boot-time singleton (consistent with DD-07 SupabaseAuthAdapter pattern). Drain order: ascending queuedAt. No transformation at sync time \u2014 stored QueuedSession domain objects pass directly to SessionRepository.syncOne() (DD-03 rationale). Idempotency: use session id as Postgres upsert key to prevent duplicates on retry. Badge count = offlineQueue.getDepth(). Tap-to-retry: expose SyncCoordinator.retryNow() via sessionStore action."
+        },
+        {
+          "id": "04-03",
+          "name": "PWA service worker: cache strategy, offline history, and install banner",
+          "description": "Configure vite-plugin-pwa workbox with CacheFirst for static assets, StaleWhileRevalidate for exercise registry, NetworkFirst for API calls (DD-05). Implement manual iOS 'Add to Home Screen' banner (DD-08 OQ-03). Verify app loads from service worker cache when offline.",
+          "criteria": "Given the app has been visited at least once, when Marco opens it with no connectivity, the app loads and is usable within 2s. Given exercise history was synced previously, the history view shows the last-synced data with a 'last synced [date]' indicator. Given Marco is on iOS Safari and has not added the PWA to his home screen, a dismissable banner appears prompting him to do so. Given Marco dismisses the banner, it does not reappear on subsequent visits.",
+          "test_file": "tests/acceptance/react-pwa-ui/us-08-offline-logging.test.ts",
+          "scenario_name": "Offline addEntry writes to queue silently within 500ms",
+          "files_to_modify": [
+            "src/lib/offlineQueue.ts",
+            "src/components/HomeScreen.tsx"
+          ],
+          "estimated_hours": 3,
+          "dependencies": [
+            "04-02"
+          ],
+          "implementation_notes": "vite-plugin-pwa workbox.runtimeCaching in vite.config.ts (DD-05). CacheFirst: JS/CSS bundles, fonts, icons (content-hashed \u2014 safe to cache indefinitely). StaleWhileRevalidate: /rest/v1/exercises* (registry rarely changes). NetworkFirst: /rest/v1/sessions*, Edge Functions. Session writes bypass service worker entirely and go directly to IndexedDB queue on offline detection. AddToHomeScreenBanner: detect !window.navigator.standalone && /iPad|iPhone|iPod/.test(navigator.userAgent) in iOS Safari."
+        }
+      ]
+    }
+  ],
+  "implementation_scope": {
+    "source_directories": [
+      "src/components/",
+      "src/hooks/",
+      "src/stores/",
+      "src/lib/",
+      "src/workers/"
+    ],
+    "test_directories": [
+      "src/__tests__/"
+    ],
+    "excluded_patterns": [
+      "**/*.d.ts",
+      "src/components/ui/**",
+      "**/__SCAFFOLD__*"
+    ]
+  },
+  "validation": {
+    "status": "pending",
+    "reviewer": "nw-software-crafter",
+    "approved_at": "TODO"
+  }
+}

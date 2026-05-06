@@ -10,6 +10,10 @@ import { AddToHomeScreenBanner } from "./AddToHomeScreenBanner.js";
 import { greeting } from "../lib/greeting.js";
 import "../styles/home.css";
 
+function navItemClass({ isActive }: { isActive: boolean }): string {
+  return `home__nav-item${isActive ? " active" : ""}`;
+}
+
 export function HomeScreen(): React.ReactElement {
   const user = useAuthStore((s) => s.user);
   const queueDepth = useSessionStore((s) => s.queueDepth);
@@ -18,8 +22,8 @@ export function HomeScreen(): React.ReactElement {
   const hour = new Date().getHours();
   const greetingText = greeting(hour);
 
-  const syncStatus = syncRetryAvailable ? "error" : "syncing";
   const hasPending = queueDepth > 0;
+  const hasSyncError = syncRetryAvailable;
 
   return (
     <div className="home" aria-label="Home">
@@ -31,7 +35,7 @@ export function HomeScreen(): React.ReactElement {
         <span aria-label="User email">{user?.email ?? ""}</span>
         {hasPending && (
           <span
-            className={`home__sync-badge${syncStatus === "error" ? " home__sync-badge--error" : ""}`}
+            className={`home__sync-badge${hasSyncError ? " home__sync-badge--error" : ""}`}
             aria-label="Pending sync count"
           >
             {queueDepth}
@@ -47,36 +51,28 @@ export function HomeScreen(): React.ReactElement {
         <NavLink
           to="/session"
           aria-label="Session"
-          className={({ isActive }) =>
-            `home__nav-item${isActive ? " active" : ""}`
-          }
+          className={navItemClass}
         >
           Session
         </NavLink>
         <NavLink
           to="/history"
           aria-label="History"
-          className={({ isActive }) =>
-            `home__nav-item${isActive ? " active" : ""}`
-          }
+          className={navItemClass}
         >
           History
         </NavLink>
         <NavLink
           to="/chain"
           aria-label="Chain"
-          className={({ isActive }) =>
-            `home__nav-item${isActive ? " active" : ""}`
-          }
+          className={navItemClass}
         >
           Chain
         </NavLink>
         <NavLink
           to="/readiness"
           aria-label="Readiness"
-          className={({ isActive }) =>
-            `home__nav-item${isActive ? " active" : ""}`
-          }
+          className={navItemClass}
         >
           Readiness
         </NavLink>

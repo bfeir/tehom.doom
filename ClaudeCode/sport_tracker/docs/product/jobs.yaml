@@ -1,0 +1,129 @@
+schema_version: 1
+
+product: "calisthenics-tracker-v1"
+last_updated: "2026-04-13"
+source_wave: "DISCUSS"
+
+# Job stories are the canonical source of truth for user jobs across the product.
+# User stories in feature/* trace to these jobs (N:1 — many stories per job).
+# Format: JTBD Job Story — Situation / Motivation / Outcome (Moesta & Spiek format)
+
+jobs:
+  - id: JS-01
+    title: "Progression Readiness Decision"
+    executor: "Intermediate RR practitioner (6–24 months training)"
+    situation: "When I finish a workout set and hit my rep target for the first time"
+    motivation: "I want to know whether that single achievement means I'm ready to advance or whether I need more sessions at this level"
+    outcome: "So I can train with direction and stop second-guessing myself"
+    dimensions:
+      functional: "Determine advancement readiness using RR-specific criteria (rep range, consecutive sessions, form quality)"
+      emotional: "Replace anxiety and ambiguity with confidence and a clear next step"
+      social: "Not need to post a thread on r/bodyweightfitness and wait hours for an answer"
+    opportunity: "O1 (Score 16)"
+    source_signals:
+      - "A1: 45-min research per session"
+      - "B2: author Q&A as workaround"
+      - "A4: paid coaching for this question"
+    stories:
+      - feature: "calisthenics-tracker-v1"
+        wave: "DISCUSS"
+        story_ids: ["US-01", "US-02"]
+
+  - id: JS-02
+    title: "Volume Tracking Without Manual Calculation"
+    executor: "Intermediate RR practitioner who trains consistently"
+    situation: "When I train consistently over multiple weeks"
+    motivation: "I want to see whether I'm meeting the RR's rep accumulation requirements over time"
+    outcome: "So I can see whether my volume is sufficient for progression or whether I need to adjust"
+    dimensions:
+      functional: "Automatically aggregate sets × reps per exercise across sessions and compare against RR targets"
+      emotional: "Replace retrospective discovery with ongoing awareness"
+      social: "Not have to maintain a manual spreadsheet just to see patterns"
+    opportunity: "O2/O3 (Score 14/11)"
+    source_signals:
+      - "A2: 7-month spreadsheet maintained"
+      - "A3: volume landmarks discovered retrospectively"
+      - "B3: multi-tool fragmentation"
+    stories:
+      - feature: "calisthenics-tracker-v1"
+        wave: "DISCUSS"
+        story_ids: ["US-01", "US-03"]
+
+  - id: JS-03
+    title: "RR Knowledge Access Without Research Detour"
+    executor: "Intermediate RR practitioner in a training context"
+    situation: "When I'm in the middle of a workout and want to know the correct form standard or what comes next in my progression chain"
+    motivation: "I want to access RR criteria directly within my training context"
+    outcome: "So I can train with confidence and stop switching between the app, the wiki, and YouTube"
+    dimensions:
+      functional: "In-app RR exercise library with advancement criteria and next exercise in chain"
+      emotional: "Replace the friction of leaving the training context with seamless in-context access"
+      social: "Not interrupt training focus to research on Reddit"
+    opportunity: "O4 (Score 14)"
+    source_signals:
+      - "A4: 'there is no app'"
+      - "B1: printed annotated table"
+      - "B3: multi-tool stack"
+    stories:
+      - feature: "calisthenics-tracker-v1"
+        wave: "DISCUSS"
+        story_ids: ["US-04"]
+
+  - id: JS-04
+    title: "Early Plateau Detection"
+    executor: "Intermediate RR practitioner who logs consistently but doesn't analyze data"
+    situation: "When my performance has been flat for 3 or more sessions and I have not yet noticed it"
+    motivation: "I want the system to alert me before it becomes a months-long stall"
+    outcome: "So I can intervene early rather than discover the problem retroactively"
+    dimensions:
+      functional: "Automated detection of rep count flatline over trailing sessions; proactive alert before 4-week stall"
+      emotional: "Replace demoralizing retrospective discoveries with empowering early warnings"
+      social: "Not need a coach or community to tell me what the data should already be showing"
+    opportunity: "O2 (Score 14)"
+    source_signals:
+      - "A3: volume gap discovered retrospectively"
+      - "A5: 3-week regression from undetected overtraining"
+      - "B2: recurring stalled-skill questions"
+    stories:
+      - feature: "calisthenics-tracker-v1"
+        wave: "DISCUSS"
+        story_ids: ["US-05"]
+
+  - id: JS-05
+    title: "Logging Without Tool Fragmentation"
+    executor: "Intermediate RR practitioner sitting down after a session"
+    situation: "When I sit down after a session to log what I did"
+    motivation: "I want to log sets, reps, and RPE against named RR exercises in a single tool"
+    outcome: "So I can spend my post-workout time recovering, not administering"
+    dimensions:
+      functional: "RR exercise autocomplete, quick log entry (exercise + sets×reps + optional RPE), auto-save"
+      emotional: "Replace cognitive overhead of multi-tool maintenance with a single, fast logging action"
+      social: "Not justify to myself why I'm still using a spreadsheet when a purpose-built app exists"
+    opportunity: "O3 (Score 11)"
+    source_signals:
+      - "B3: 'I wish it was one thing'"
+      - "D2: Google Sheets template as default tool"
+      - "A2: 30 min/week spreadsheet maintenance"
+    stories:
+      - feature: "calisthenics-tracker-v1"
+        wave: "DISCUSS"
+        story_ids: ["US-01"]
+
+  - id: JS-06
+    title: "Rest Timer Without Switching Apps"
+    executor: "RR practitioner mid-workout between supersets"
+    situation: "When I finish a set and need to rest before the next exercise"
+    motivation: "I want to know when my rest is over without watching the clock or switching to a separate timer app"
+    outcome: "So I can focus on recovery between sets instead of managing tools"
+    dimensions:
+      functional: "Configurable countdown timer (90s default) triggered from the session log screen, glanceable visual display"
+      emotional: "Replace habitual app-switching friction with a seamless in-context countdown"
+      social: "Not open a separate clock app while training — keep all tools in one place"
+    opportunity: "JS-06 (Score 13)"
+    source_signals:
+      - "Interview Q7: uses separate clock app for 90-second rest between supersets, every session"
+      - "Interview Q6: friend at the park 'forgot rest times' — independent corroboration"
+    stories:
+      - feature: "react-pwa-ui"
+        wave: "DISCUSS"
+        story_ids: ["UI-05"]
