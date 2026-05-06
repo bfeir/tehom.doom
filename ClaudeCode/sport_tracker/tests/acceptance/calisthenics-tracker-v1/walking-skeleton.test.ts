@@ -94,14 +94,14 @@ describe("Marco makes his first progression decision (online)", () => {
    *
    * Given Marco has no prior push sessions logged
    * When he searches for "Pike Push-up" and selects it from the exercise registry
-   * Then the registry returns "Pike Push-up (PPP progression)" as the top result
+   * Then the registry returns "Pike Push-up" as the top result
    */
   it("finds Pike Push-up in the exercise registry by typing a partial name", async () => {
     const suggestions = await exercisePort.search("pike");
 
     expect(suggestions.length).toBeGreaterThan(0);
-    expect(suggestions[0].name).toBe("Pike Push-up (PPP progression)");
-    expect(suggestions[0].track).toBe("push");
+    expect(suggestions[0].name).toBe("Pike Push-up");
+    expect(suggestions[0].track).toBe("hspu");
     expect(suggestions[0].criteria).not.toBeNull();
 
     pikeExerciseId = suggestions[0].id;
@@ -117,7 +117,7 @@ describe("Marco makes his first progression decision (online)", () => {
     const session = await sessionPort.create(TEST_USER_ID);
     const withEntry = await sessionPort.addEntry(session.id, {
       exerciseId: pikeExerciseId,
-      exerciseName: "Pike Push-up (PPP progression)",
+      exerciseName: "Pike Push-up",
       sets: 3,
       reps: 8,
       formQuality: 4,
@@ -164,7 +164,7 @@ describe("Marco makes his first progression decision (online)", () => {
      * And his current exercise is identified in the chain
      * And each exercise shows its RR criteria and wiki attribution
      */
-    const chain = await exercisePort.findProgressionChain("push");
+    const chain = await exercisePort.findProgressionChain("hspu");
 
     expect(chain.length).toBeGreaterThan(0);
 

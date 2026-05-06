@@ -81,7 +81,7 @@ describe("Exercise autocomplete returns RR suggestions quickly", () => {
    *
    * Given Marco is on the New Session screen
    * When he types "pike" in the exercise search field
-   * Then "Pike Push-up (PPP progression)" appears as the top suggestion
+   * Then "Pike Push-up" appears as the top suggestion
    * And the suggestion is available within 200 milliseconds of typing onset
    */
   it("returns Pike Push-up as the first result when searching 'pike'", async () => {
@@ -90,7 +90,7 @@ describe("Exercise autocomplete returns RR suggestions quickly", () => {
     const elapsed = Date.now() - start;
 
     expect(results.length).toBeGreaterThan(0);
-    expect(results[0].name).toBe("Pike Push-up (PPP progression)");
+    expect(results[0].name).toBe("Pike Push-up");
     expect(elapsed).toBeLessThan(200);
   });
 
@@ -98,7 +98,7 @@ describe("Exercise autocomplete returns RR suggestions quickly", () => {
     /**
      * Given Marco types "pike pushup" (no hyphen)
      * When the autocomplete runs
-     * Then the result resolves to the same exercise as "Pike Push-up (PPP progression)"
+     * Then the result resolves to the same exercise as "Pike Push-up"
      * And the exercise_id is identical in all three cases
      */
     const byHyphen = await exercisePort.search("pike push-up");
@@ -136,7 +136,7 @@ describe("Logging a session stores the training data correctly", () => {
     const session = await sessionPort.create(USER_MARCO);
     const withEntry = await sessionPort.addEntry(session.id, {
       exerciseId: PIKE_PUSH_UP_ID,
-      exerciseName: "Pike Push-up (PPP progression)",
+      exerciseName: "Pike Push-up",
       sets: 3,
       reps: 8,
       formQuality: 4,
@@ -160,7 +160,7 @@ describe("Logging a session stores the training data correctly", () => {
     const session = await sessionPort.create(USER_MARCO);
     const withEntry = await sessionPort.addEntry(session.id, {
       exerciseId: PIKE_PUSH_UP_ID,
-      exerciseName: "Pike Push-up (PPP progression)",
+      exerciseName: "Pike Push-up",
       sets: 3,
       reps: 8,
       formQuality: null,
@@ -209,7 +209,7 @@ describe("Logging multiple exercises in a single training session", () => {
     const session = await sessionPort.create("user-tomas-us01");
     const withPike = await sessionPort.addEntry(session.id, {
       exerciseId: PIKE_PUSH_UP_ID,
-      exerciseName: "Pike Push-up (PPP progression)",
+      exerciseName: "Pike Push-up",
       sets: 3,
       reps: 8,
       formQuality: 4,
@@ -226,7 +226,7 @@ describe("Logging multiple exercises in a single training session", () => {
     const closed = await sessionPort.close(withBoth.id);
 
     expect(closed.entries).toHaveLength(2);
-    expect(closed.entries[0].exerciseName).toBe("Pike Push-up (PPP progression)");
+    expect(closed.entries[0].exerciseName).toBe("Pike Push-up");
     expect(closed.entries[1].exerciseName).toBe("Australian Rows");
   });
 
@@ -240,7 +240,7 @@ describe("Logging multiple exercises in a single training session", () => {
     const session = await sessionPort.create(USER_MARCO);
     const withFirst = await sessionPort.addEntry(session.id, {
       exerciseId: PIKE_PUSH_UP_ID,
-      exerciseName: "Pike Push-up (PPP progression)",
+      exerciseName: "Pike Push-up",
       sets: 2,
       reps: 5,
       formQuality: 4,
@@ -248,7 +248,7 @@ describe("Logging multiple exercises in a single training session", () => {
     });
     const withSecond = await sessionPort.addEntry(withFirst.id, {
       exerciseId: PIKE_PUSH_UP_ID,
-      exerciseName: "Pike Push-up (PPP progression)",
+      exerciseName: "Pike Push-up",
       sets: 3,
       reps: 8,
       formQuality: 4,
@@ -276,7 +276,7 @@ describe("Closed session cannot have new entries added (session state machine)",
     const session = await sessionPort.create(USER_MARCO);
     const withEntry = await sessionPort.addEntry(session.id, {
       exerciseId: PIKE_PUSH_UP_ID,
-      exerciseName: "Pike Push-up (PPP progression)",
+      exerciseName: "Pike Push-up",
       sets: 3,
       reps: 8,
       formQuality: 4,
@@ -387,7 +387,7 @@ describe("Error: offline sync conflict resolved by last-write-wins", () => {
     await supabaseAdmin.from("sessions").insert({
       id: sharedId,
       user_id: USER_MARCO,
-      entries: [{ exerciseId: PIKE_PUSH_UP_ID, exerciseName: "Pike Push-up (PPP progression)", sets: 1, reps: 5, formQuality: 3, rpe: null }],
+      entries: [{ exerciseId: PIKE_PUSH_UP_ID, exerciseName: "Pike Push-up", sets: 1, reps: 5, formQuality: 3, rpe: null }],
       is_open: false,
       logged_at: olderDate.toISOString(),
     });
@@ -400,7 +400,7 @@ describe("Error: offline sync conflict resolved by last-write-wins", () => {
     conflictRepo.queueConflictSession({
       id: sharedId,
       userId: USER_MARCO,
-      entries: [{ exerciseId: PIKE_PUSH_UP_ID, exerciseName: "Pike Push-up (PPP progression)", sets: 3, reps: 8, formQuality: 5, rpe: null }],
+      entries: [{ exerciseId: PIKE_PUSH_UP_ID, exerciseName: "Pike Push-up", sets: 3, reps: 8, formQuality: 5, rpe: null }],
       loggedAt: newerDate,
       syncedAt: null,
       isOpen: false,

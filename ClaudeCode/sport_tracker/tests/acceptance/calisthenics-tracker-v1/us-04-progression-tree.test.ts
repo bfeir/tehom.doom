@@ -43,7 +43,7 @@ beforeAll(async () => {
   PIKE_PUSH_UP_ID = pikeResults[0].id;
 
   // Resolve FEET_ELEVATED_PPP_ID as the next exercise after PIKE_PUSH_UP_ID in push chain
-  const pushChain = await exerciseRepo.findProgressionChain("push");
+  const pushChain = await exerciseRepo.findProgressionChain("hspu");
   const pikeIndex = pushChain.findIndex((ex) => ex.id === PIKE_PUSH_UP_ID);
   if (pikeIndex === -1 || pikeIndex + 1 >= pushChain.length) {
     throw new Error("Could not find Feet Elevated PPP after Pike Push-up in chain");
@@ -53,28 +53,29 @@ beforeAll(async () => {
   // Seed user_progression for USER_MARCO at FEET_ELEVATED_PPP_ID (scenario 04-3)
   await supabaseAdmin.from("user_progression").upsert({
     user_id: USER_MARCO,
-    track: "push",
+    track: "hspu",
     current_exercise_id: FEET_ELEVATED_PPP_ID,
   });
 
-  // Resolve AUSTRALIAN_ROWS_ID from real pull chain data (scenario 04-5)
-  const pullExercises = await exerciseRepo.findProgressionChain("pull");
-  if (pullExercises.length > 0) {
-    AUSTRALIAN_ROWS_ID = pullExercises.find((ex) => ex.name === "Australian Rows")?.id
-      ?? pullExercises[0].id;
+  // Resolve AUSTRALIAN_ROWS_ID from real row chain data (scenario 04-5)
+  const rowExercises = await exerciseRepo.findProgressionChain("row");
+  if (rowExercises.length > 0) {
+    AUSTRALIAN_ROWS_ID = rowExercises.find((ex) => ex.name.toLowerCase().includes("australian"))?.id
+      ?? rowExercises[0].id;
   } else {
-    // Insert Australian Rows if no pull exercises exist
+    // Insert Australian Pull-up if no row exercises exist
     const { data: inserted } = await supabaseAdmin
       .from("exercises")
       .insert({
-        name: "Australian Rows",
-        track: "pull",
+        slug: "australian-pull-up-fallback",
+        name: "Australian Pull-up (Row)",
+        track: "row",
         chain_order: 1,
         rr_wiki_url: "https://www.reddit.com/r/bodyweightfitness/wiki/move/phase1/rows",
       })
       .select("id")
       .single();
-    if (!inserted) throw new Error("Failed to insert Australian Rows");
+    if (!inserted) throw new Error("Failed to insert Australian Pull-up");
     AUSTRALIAN_ROWS_ID = inserted.id;
   }
 });
@@ -106,7 +107,7 @@ describe("Push progression chain shows all RR push exercises in order", () => {
    * And each exercise carries its RR wiki attribution
    */
   it("returns all RR push exercises in chain order with attribution links", async () => {
-    const chain = await exercisePort.findProgressionChain("push");
+    const chain = await exercisePort.findProgressionChain("hspu");
 
     expect(chain.length).toBeGreaterThan(5); // RR push chain has multiple steps
     // Must be sorted by chain_order ascending
@@ -116,7 +117,7 @@ describe("Push progression chain shows all RR push exercises in order", () => {
     // SC-03: every exercise must carry attribution URL
     for (const exercise of chain) {
       expect(exercise.rrWikiUrl).toBeTruthy();
-      expect(exercise.track).toBe("push");
+      expect(exercise.track).toBe("hspu");
     }
   });
 
@@ -127,7 +128,7 @@ describe("Push progression chain shows all RR push exercises in order", () => {
      * Then the exercise's RR criteria are available (target reps, sets, form minimum, consecutive sessions)
      * And the source "r/BWF Recommended Routine wiki" is cited with a link
      */
-    const chain = await exercisePort.findProgressionChain("push");
+    const chain = await exercisePort.findProgressionChain("hspu");
 
     for (const exercise of chain) {
       if (exercise.criteria !== null) {
@@ -153,11 +154,11 @@ describe("User can identify their current position in the push chain", () => {
      * And exercises that appear before it in the chain are completed (lower chain_order)
      * And exercises after it are upcoming (higher chain_order)
      */
-    const progression = await progressionPort.getCurrentProgression(USER_MARCO, "push");
+    const progression = await progressionPort.getCurrentProgression(USER_MARCO, "hspu");
     expect(progression).not.toBeNull();
     expect(progression!.currentExerciseId).toBe(FEET_ELEVATED_PPP_ID);
 
-    const chain = await exercisePort.findProgressionChain("push");
+    const chain = await exercisePort.findProgressionChain("hspu");
     const current = chain.find((ex) => ex.id === FEET_ELEVATED_PPP_ID);
     expect(current).toBeDefined();
 
@@ -177,7 +178,7 @@ describe("Tapping an exercise shows its RR criteria and wiki citation", () => {
   it("findById returns the full exercise data including criteria and wiki URL", async () => {
     /**
      * Given Marco is viewing the push progression tree
-     * When he taps "Pike Push-up (PPP progression)"
+     * When he taps "Pike Push-up"
      * Then the RR criteria for that exercise are displayed
      * And the source "r/BWF Recommended Routine wiki" is cited with a link
      * And the criteria include target reps, sets, minimum form quality, and consecutive sessions
@@ -185,7 +186,7 @@ describe("Tapping an exercise shows its RR criteria and wiki citation", () => {
     const exercise = await exercisePort.findById(PIKE_PUSH_UP_ID);
 
     expect(exercise).not.toBeNull();
-    expect(exercise!.name).toBe("Pike Push-up (PPP progression)");
+    expect(exercise!.name).toBe("Pike Push-up");
     expect(exercise!.criteria).not.toBeNull();
     expect(exercise!.criteria!.targetReps).toBe(8);
     expect(exercise!.criteria!.targetSets).toBe(3);
@@ -207,10 +208,10 @@ describe("Pull progression chain shows RR pull exercises in order (Release 2)", 
      * Then "Australian Rows" is present in the pull chain
      * And the pull chain shows exercises in RR progression order
      */
-    const chain = await exercisePort.findProgressionChain("pull");
+    const chain = await exercisePort.findProgressionChain("row");
 
     expect(chain.length).toBeGreaterThan(0);
-    expect(chain.every((ex) => ex.track === "pull")).toBe(true);
+    expect(chain.every((ex) => ex.track === "row")).toBe(true);
 
     const australianRows = chain.find((ex) => ex.id === AUSTRALIAN_ROWS_ID);
     expect(australianRows).toBeDefined();
@@ -244,7 +245,7 @@ describe("Error: progression tree shows no current position for a user with no p
      */
     const progression = await progressionPort.getCurrentProgression(
       "user-brand-new-no-progression",
-      "push"
+      "hspu"
     );
     expect(progression).toBeNull();
   });
@@ -260,7 +261,7 @@ describe("Error: progression history is empty for a user who has never advanced"
      */
     const history = await progressionPort.findHistory(
       "user-never-advanced",
-      "push"
+      "hspu"
     );
     expect(history).toHaveLength(0);
   });
@@ -284,7 +285,7 @@ describe("Error: advancement rejected when qualifying session IDs are not provid
     ).rejects.toThrow();
 
     // Current exercise must be unchanged
-    const progression = await progressionPort.getCurrentProgression(USER_SOFIA, "push");
+    const progression = await progressionPort.getCurrentProgression(USER_SOFIA, "hspu");
     if (progression !== null) {
       expect(progression.currentExerciseId).not.toBe(FEET_ELEVATED_PPP_ID);
     }

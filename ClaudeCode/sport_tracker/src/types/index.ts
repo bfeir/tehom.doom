@@ -4,7 +4,7 @@
 // Value objects
 // ---------------------------------------------------------------------------
 
-export type Track = "push" | "pull" | "legs" | "skill";
+export type Track = "push-up" | "hspu" | "row" | "pull-up" | "squat" | "nordic-curl" | "core" | "skill";
 
 export type SignalState = "READY" | "NOT_YET" | "REVIEW";
 

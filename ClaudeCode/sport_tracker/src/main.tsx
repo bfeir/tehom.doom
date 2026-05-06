@@ -68,10 +68,14 @@ function HistoryPage(): React.ReactElement {
 }
 
 const TRACKS = [
-  { id: "push", label: "Push" },
-  { id: "pull", label: "Pull" },
-  { id: "legs", label: "Legs" },
-  { id: "skill", label: "Skill" },
+  { id: "push-up",     label: "Push-ups" },
+  { id: "hspu",        label: "HSPU" },
+  { id: "row",         label: "Rows" },
+  { id: "pull-up",     label: "Pull-ups" },
+  { id: "squat",       label: "Squats" },
+  { id: "nordic-curl", label: "Nordic Curls" },
+  { id: "core",        label: "Core" },
+  { id: "skill",       label: "Skills" },
 ] as const;
 
 type Track = (typeof TRACKS)[number]["id"];
