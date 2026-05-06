@@ -7,6 +7,7 @@
 // of the active logging UI.
 
 import React, { useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { useSessionLogger } from "../hooks/useSessionLogger.js";
 import { useSessionStore } from "../stores/sessionStore.js";
 import { SessionRepository } from "../repositories/SessionRepository.js";
@@ -72,6 +73,7 @@ export function SessionScreen({
   userId: _userId,
   closedSession,
 }: SessionScreenProps): React.ReactElement {
+  const queryClient = useQueryClient();
   const { logSet, currentSession, isLoading, error } = useSessionLogger({
     sessionId,
     sessionPort: sessionRepository,
@@ -104,6 +106,7 @@ export function SessionScreen({
     try {
       await sessionRepository.close(sessionId);
       closeSession();
+      void queryClient.invalidateQueries({ queryKey: ["exercise-history"] });
     } catch (err) {
       setCloseError(err instanceof Error ? err.message : "Could not close session");
     } finally {

@@ -54,7 +54,7 @@ function HistoryPage(): React.ReactElement {
   const currentExercise = useSessionStore((s) => s.currentExercise);
   const { sessions, isOffline, lastSyncedAt } = useExerciseHistory({
     userId: user?.id ?? "",
-    exerciseId: currentExercise ?? "",
+    exerciseId: currentExercise ?? null,
     plan: DEFAULT_PLAN,
   });
   return (

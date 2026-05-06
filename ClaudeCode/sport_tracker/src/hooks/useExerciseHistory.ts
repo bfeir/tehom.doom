@@ -7,7 +7,7 @@ import type { Session } from "../types/index.js";
 
 export interface UseExerciseHistoryArgs {
   userId: string;
-  exerciseId: string;
+  exerciseId: string | null;
   limit?: number;
   plan?: "free" | "pro";
   /** Optional override for testing — injected HistoryService instance */
@@ -32,7 +32,7 @@ export function useExerciseHistory(args: UseExerciseHistoryArgs): UseExerciseHis
   const service = historyService ?? defaultHistoryService();
 
   const { data, isLoading, error } = useQuery<Session[], Error>({
-    queryKey: ["exercise-history", userId, exerciseId, limit, plan],
+    queryKey: ["exercise-history", userId, exerciseId ?? null, limit, plan],
     queryFn: () => service.findHistory(userId, exerciseId, limit, plan),
   });
 

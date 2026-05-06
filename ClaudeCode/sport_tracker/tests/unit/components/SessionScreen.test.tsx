@@ -14,7 +14,14 @@
 import { describe, it, expect, vi, afterEach, type Mock } from "vitest";
 import { render, screen, fireEvent, act } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import React from "react";
 import type { Session, ExerciseEntry } from "../../../src/types/index.js";
+
+function withQueryClient(ui: React.ReactElement): React.ReactElement {
+  const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+  return <QueryClientProvider client={client}>{ui}</QueryClientProvider>;
+}
 
 // Mock Supabase client to prevent initialization error in test environment
 vi.mock("../../../src/lib/supabaseClient.js", () => ({
@@ -223,13 +230,13 @@ describe("Session close summary groups entries by exercise name", () => {
         },
       ]);
 
-      render(
+      render(withQueryClient(
         <SessionScreen
           sessionId="session-closed-1"
           userId="user-marco"
           closedSession={closedSession}
         />
-      );
+      ));
 
       expect(screen.getByRole("region", { name: /session summary/i })).toBeTruthy();
       expect(screen.getByText(/Pike Push-ups/i)).toBeTruthy();
@@ -258,13 +265,13 @@ describe("Session close summary groups entries by exercise name", () => {
       // syncedAt is null — session is in offline queue
       expect(closedSession.syncedAt).toBeNull();
 
-      render(
+      render(withQueryClient(
         <SessionScreen
           sessionId="session-closed-1"
           userId="user-marco"
           closedSession={closedSession}
         />
-      );
+      ));
 
       const syncElements = screen.getAllByText(/saved offline|sync pending|will sync/i);
       expect(syncElements.length).toBeGreaterThan(0);
@@ -289,7 +296,7 @@ describe("Checkmark microinteraction after set is saved (step 02-01)", () => {
    */
   it("complete button has class 'session__complete-btn--animated' immediately after click", () => {
     setupSessionLoggerMock([makeEntry()]);
-    const { container, unmount } = render(<SessionScreen sessionId="s1" userId="u1" />);
+    const { container, unmount } = render(withQueryClient(<SessionScreen sessionId="s1" userId="u1" />));
     const completeBtn = container.querySelector(".session__complete-btn") as HTMLButtonElement;
     act(() => { completeBtn.click(); });
     expect(completeBtn.className).toContain("session__complete-btn--animated");
@@ -338,7 +345,7 @@ describe("SessionScreen BEM class structure (step 01-04)", () => {
    */
   it("root element renders with className containing 'session'", () => {
     setupSessionLoggerMock();
-    const { container } = render(<SessionScreen sessionId="s1" userId="u1" />);
+    const { container } = render(withQueryClient(<SessionScreen sessionId="s1" userId="u1" />));
     const root = container.firstElementChild as HTMLElement;
     expect(root.className).toContain("session");
   });
@@ -351,7 +358,7 @@ describe("SessionScreen BEM class structure (step 01-04)", () => {
    */
   it("exercise row renders with className containing 'session__exercise'", () => {
     setupSessionLoggerMock([makeEntry()]);
-    render(<SessionScreen sessionId="s1" userId="u1" />);
+    render(withQueryClient(<SessionScreen sessionId="s1" userId="u1" />));
     const exerciseRows = document.querySelectorAll(".session__exercise");
     expect(exerciseRows.length).toBeGreaterThan(0);
   });
@@ -364,7 +371,7 @@ describe("SessionScreen BEM class structure (step 01-04)", () => {
    */
   it("complete button renders with className containing 'session__complete-btn'", () => {
     setupSessionLoggerMock([makeEntry()]);
-    render(<SessionScreen sessionId="s1" userId="u1" />);
+    render(withQueryClient(<SessionScreen sessionId="s1" userId="u1" />));
     const completeButtons = document.querySelectorAll(".session__complete-btn");
     expect(completeButtons.length).toBeGreaterThan(0);
   });
@@ -378,7 +385,7 @@ describe("SessionScreen BEM class structure (step 01-04)", () => {
   it("completed exercise row renders with className containing 'session__exercise--done'", async () => {
     setupSessionLoggerMock([makeEntry()]);
     const user = userEvent.setup();
-    render(<SessionScreen sessionId="s1" userId="u1" />);
+    render(withQueryClient(<SessionScreen sessionId="s1" userId="u1" />));
     const completeBtn = document.querySelector(".session__complete-btn") as HTMLButtonElement;
     await user.click(completeBtn);
     const doneRows = document.querySelectorAll(".session__exercise--done");

@@ -6,7 +6,7 @@ export class HistoryService {
 
   async findHistory(
     userId: string,
-    exerciseId: string,
+    exerciseId: string | null,
     limit: number,
     plan: "free" | "pro"
   ): Promise<Session[]> {
