@@ -2,94 +2,134 @@
 
 .session {
   background: var(--bg-base);
-  min-height: 100vh;
+  min-height: 100dvh;
   padding: var(--spacing-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-4);
+}
+
+/* ---------------------------------------------------------------------------
+   Header — set count badge
+   ---------------------------------------------------------------------- */
+
+.session__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--spacing-3) 0;
+}
+
+.session__title {
+  font-size: var(--font-size-body);
+  font-weight: var(--font-weight-semi);
+  color: var(--text-secondary);
+  margin: 0;
+}
+
+.session__count-badge {
+  background: var(--accent-dim);
+  color: var(--accent);
+  font-size: var(--font-size-label);
+  font-weight: var(--font-weight-bold);
+  border-radius: var(--radius-chip);
+  padding: var(--spacing-1) var(--spacing-3);
+}
+
+/* ---------------------------------------------------------------------------
+   Logged entries list
+   ---------------------------------------------------------------------- */
+
+.session__entries {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-2);
 }
 
 .session__exercise {
   background: var(--bg-surface);
   border-radius: var(--radius-card);
   border: 1px solid var(--border);
-  padding: var(--spacing-4);
+  padding: var(--spacing-3) var(--spacing-4);
   display: flex;
   align-items: center;
-  gap: var(--spacing-4);
+  gap: var(--spacing-3);
   min-height: var(--touch-target);
+  transition: opacity var(--transition-duration) ease;
 }
 
 .session__exercise--done {
-  opacity: 0.5;
+  opacity: 0.4;
+  border-color: transparent;
 }
 
 .session__exercise--done .session__exercise-name {
   text-decoration: line-through;
+  color: var(--text-muted);
+}
+
+.session__exercise-name {
+  flex: 1;
+  font-size: var(--font-size-body);
+  color: var(--text-primary);
 }
 
 .session__sets,
 .session__reps {
-  font-size: var(--font-size-set-count);
+  font-size: var(--font-size-label);
   font-weight: var(--font-weight-semi);
-  color: var(--text-primary);
+  color: var(--text-secondary);
   font-feature-settings: "tnum";
+  white-space: nowrap;
 }
 
 .session__complete-btn {
-  width: 44px;
-  height: 44px;
+  width: 36px;
+  height: 36px;
   border-radius: 50%;
-  background: var(--accent);
-  border: none;
+  background: var(--bg-elevated);
+  border: 2px solid var(--border);
   cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-/* Circular variant — used for per-exercise done toggle */
-.session__exercise .session__complete-btn {
-  width: 44px;
-  height: 44px;
-  border-radius: 50%;
-  padding: 0;
   flex-shrink: 0;
+  position: relative;
+  transition: background var(--transition-duration) ease,
+              border-color var(--transition-duration) ease;
 }
 
-/* Log Set button — full-width primary action in the log form */
-.session__log-btn {
-  min-height: var(--touch-target);
-  width: 100%;
-  border-radius: var(--radius-button);
+.session__exercise--done .session__complete-btn {
   background: var(--accent);
-  color: var(--color-white);
-  border: none;
-  cursor: pointer;
-  font-size: var(--font-size-body);
-  font-weight: var(--font-weight-semi);
-  padding: var(--spacing-3) var(--spacing-6);
+  border-color: var(--accent);
 }
 
-.session__log-btn:disabled {
-  opacity: 0.4;
-  cursor: not-allowed;
-}
-
-/* Log form — exercise input + sets/reps */
+/* ---------------------------------------------------------------------------
+   Log form — exercise input + sets/reps
+   ---------------------------------------------------------------------- */
 
 .session__log-form {
-  display: flex;
-  flex-direction: column;
-  gap: var(--spacing-3);
-  margin-top: var(--spacing-6);
-  padding: var(--spacing-4);
   background: var(--bg-surface);
   border-radius: var(--radius-card);
   border: 1px solid var(--border);
+  padding: var(--spacing-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-3);
+}
+
+.session__log-form-title {
+  font-size: var(--font-size-label);
+  font-weight: var(--font-weight-semi);
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin: 0 0 var(--spacing-1);
 }
 
 .session__log-form label {
   font-size: var(--font-size-label);
   color: var(--text-secondary);
   font-weight: var(--font-weight-semi);
+  display: block;
+  margin-bottom: var(--spacing-1);
 }
 
 .session__input {
@@ -103,19 +143,159 @@
   box-sizing: border-box;
 }
 
-.session__input--number {
-  width: 80px;
-}
-
 .session__input:focus {
   outline: 2px solid var(--accent);
   outline-offset: 2px;
+  border-color: var(--accent);
 }
+
+.session__input-row {
+  display: flex;
+  gap: var(--spacing-3);
+}
+
+.session__input-group {
+  display: flex;
+  flex-direction: column;
+}
+
+.session__input-group--grow {
+  flex: 1;
+}
+
+.session__input-group--fixed .session__input {
+  width: 72px;
+}
+
+.session__log-btn {
+  min-height: var(--touch-target);
+  width: 100%;
+  border-radius: var(--radius-button);
+  background: var(--accent);
+  color: var(--color-white);
+  border: none;
+  cursor: pointer;
+  font-size: var(--font-size-body);
+  font-weight: var(--font-weight-semi);
+  margin-top: var(--spacing-2);
+}
+
+.session__log-btn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+/* ---------------------------------------------------------------------------
+   Close section
+   ---------------------------------------------------------------------- */
+
+.session__close-section {
+  margin-top: auto;
+  padding-top: var(--spacing-4);
+}
+
+.session__close-btn {
+  width: 100%;
+  min-height: var(--touch-target);
+  border-radius: var(--radius-button);
+  background: transparent;
+  color: var(--danger);
+  border: 1.5px solid var(--danger);
+  cursor: pointer;
+  font-size: var(--font-size-body);
+  font-weight: var(--font-weight-semi);
+}
+
+.session__close-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* Confirmation dialog */
+.session__confirm-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: flex-end;
+  z-index: 100;
+  padding: var(--spacing-4);
+}
+
+.session__confirm-sheet {
+  width: 100%;
+  background: var(--bg-elevated);
+  border-radius: var(--radius-card) var(--radius-card) var(--radius-card) var(--radius-card);
+  padding: var(--spacing-6) var(--spacing-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-4);
+}
+
+.session__confirm-title {
+  font-size: var(--font-size-body);
+  font-weight: var(--font-weight-semi);
+  color: var(--text-primary);
+  margin: 0;
+  text-align: center;
+}
+
+.session__confirm-body {
+  font-size: var(--font-size-label);
+  color: var(--text-secondary);
+  margin: 0;
+  text-align: center;
+}
+
+.session__confirm-yes {
+  width: 100%;
+  min-height: var(--touch-target);
+  border-radius: var(--radius-button);
+  background: var(--danger);
+  color: var(--color-white);
+  border: none;
+  cursor: pointer;
+  font-size: var(--font-size-body);
+  font-weight: var(--font-weight-semi);
+}
+
+.session__confirm-cancel {
+  width: 100%;
+  min-height: var(--touch-target);
+  border-radius: var(--radius-button);
+  background: transparent;
+  color: var(--text-secondary);
+  border: 1px solid var(--border);
+  cursor: pointer;
+  font-size: var(--font-size-body);
+}
+
+/* ---------------------------------------------------------------------------
+   Status messages
+   ---------------------------------------------------------------------- */
+
+.session__saving {
+  font-size: var(--font-size-label);
+  color: var(--text-secondary);
+  text-align: center;
+}
+
+.session__error {
+  font-size: var(--font-size-label);
+  color: var(--danger);
+  background: color-mix(in srgb, var(--danger) 12%, transparent);
+  border-radius: var(--radius-button);
+  padding: var(--spacing-2) var(--spacing-3);
+}
+
+/* ---------------------------------------------------------------------------
+   Animations
+   ---------------------------------------------------------------------- */
 
 @keyframes checkmarkPop {
   from { transform: scale(1); }
-  50% { transform: scale(1.3); }
-  to { transform: scale(1); }
+  50%  { transform: scale(1.35); }
+  to   { transform: scale(1); }
 }
 
 .session__complete-btn--animated {
@@ -123,7 +303,9 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .session__complete-btn--animated {
+  .session__complete-btn--animated,
+  .session__exercise {
+    transition-duration: 0ms;
     animation-duration: 0ms;
   }
 }
