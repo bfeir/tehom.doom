@@ -80,6 +80,9 @@ export function SessionScreen({
   const [confirmClose, setConfirmClose] = useState(false);
   const [doneIndices, setDoneIndices] = useState<Set<number>>(new Set());
   const [animatingIndex, setAnimatingIndex] = useState<number | null>(null);
+  const [exerciseName, setExerciseName] = useState("");
+  const [sets, setSets] = useState(3);
+  const [reps, setReps] = useState(8);
 
   if (closedSession) {
     return <CloseSummary session={closedSession} />;
@@ -98,7 +101,6 @@ export function SessionScreen({
 
   function handleConfirmClose(): void {
     setConfirmClose(false);
-    // Delegate to session store — actual close via repository happens in caller
   }
 
   function handleCancelClose(): void {
@@ -117,6 +119,17 @@ export function SessionScreen({
     });
     setAnimatingIndex(index);
     setTimeout(() => setAnimatingIndex(null), TRANSITION_DURATION);
+  }
+
+  async function handleLogSet(): Promise<void> {
+    await logSet({
+      exerciseId: null,
+      exerciseName: exerciseName.trim(),
+      sets,
+      reps,
+      formQuality: null,
+      rpe: null,
+    });
   }
 
   return (
@@ -150,21 +163,48 @@ export function SessionScreen({
         );
       })}
 
-      <button
-        type="button"
-        onClick={() =>
-          logSet({
-            exerciseId: null,
-            exerciseName: "",
-            sets: 1,
-            reps: 1,
-            formQuality: null,
-            rpe: null,
-          })
-        }
-      >
-        Log Set
-      </button>
+      <div className="session__log-form">
+        <label htmlFor="session-exercise">Exercise</label>
+        <input
+          id="session-exercise"
+          className="session__input"
+          type="text"
+          placeholder="e.g. Push-up"
+          value={exerciseName}
+          onChange={(e) => setExerciseName(e.target.value)}
+        />
+
+        <label htmlFor="session-sets">Sets</label>
+        <input
+          id="session-sets"
+          className="session__input session__input--number"
+          type="number"
+          min={1}
+          max={20}
+          value={sets}
+          onChange={(e) => setSets(Math.max(1, parseInt(e.target.value, 10) || 1))}
+        />
+
+        <label htmlFor="session-reps">Reps</label>
+        <input
+          id="session-reps"
+          className="session__input session__input--number"
+          type="number"
+          min={1}
+          max={100}
+          value={reps}
+          onChange={(e) => setReps(Math.max(1, parseInt(e.target.value, 10) || 1))}
+        />
+
+        <button
+          type="button"
+          className="session__log-btn"
+          disabled={isLoading || exerciseName.trim() === ""}
+          onClick={() => void handleLogSet()}
+        >
+          Log Set
+        </button>
+      </div>
 
       <button
         type="button"
