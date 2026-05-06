@@ -67,13 +67,39 @@ function HistoryPage(): React.ReactElement {
   );
 }
 
+const TRACKS = [
+  { id: "push", label: "Push" },
+  { id: "pull", label: "Pull" },
+  { id: "legs", label: "Legs" },
+  { id: "skill", label: "Skill" },
+] as const;
+
+type Track = (typeof TRACKS)[number]["id"];
+
 function ChainPage(): React.ReactElement {
   const user = useAuthStore((s) => s.user);
+  const [track, setTrack] = React.useState<Track>("push");
   const { chain, currentExerciseId } = useProgressionChain({
     userId: user?.id ?? "",
-    track: "push",
+    track,
   });
-  return <ProgressionChain chain={chain} currentExerciseId={currentExerciseId} isOffline={!navigator.onLine} />;
+  return (
+    <div>
+      <div className="chain-selector">
+        {TRACKS.map((t) => (
+          <button
+            key={t.id}
+            type="button"
+            className={`chain-selector__btn${track === t.id ? " chain-selector__btn--active" : ""}`}
+            onClick={() => setTrack(t.id)}
+          >
+            {t.label}
+          </button>
+        ))}
+      </div>
+      <ProgressionChain chain={chain} currentExerciseId={currentExerciseId} isOffline={!navigator.onLine} />
+    </div>
+  );
 }
 
 function SessionPage(): React.ReactElement {

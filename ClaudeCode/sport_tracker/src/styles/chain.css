@@ -1,5 +1,46 @@
 /* chain.css — ProgressionChain BEM styles */
 
+/* ---------------------------------------------------------------------------
+   Track selector pill group
+   ---------------------------------------------------------------------- */
+
+.chain-selector {
+  display: flex;
+  gap: var(--spacing-2);
+  padding: var(--spacing-4) var(--spacing-4) 0;
+}
+
+.chain-selector__btn {
+  flex: 1;
+  min-height: 36px;
+  border-radius: var(--radius-chip);
+  background: var(--bg-elevated);
+  border: 1.5px solid var(--border);
+  color: var(--text-secondary);
+  font-size: var(--font-size-label);
+  font-weight: var(--font-weight-semi);
+  cursor: pointer;
+  transition: background var(--transition-duration) ease,
+              color var(--transition-duration) ease,
+              border-color var(--transition-duration) ease;
+}
+
+.chain-selector__btn--active {
+  background: var(--accent-dim);
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .chain-selector__btn {
+    transition-duration: 0ms;
+  }
+}
+
+/* ---------------------------------------------------------------------------
+   Chain list
+   ---------------------------------------------------------------------- */
+
 .progression-chain {
   background: var(--bg-base);
   padding: var(--spacing-4);
@@ -7,17 +48,102 @@
 
 .progression-chain__list {
   padding: 0;
-  margin: 0;
+  margin: var(--spacing-3) 0 0;
   list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-2);
+  counter-reset: chain-step;
 }
 
 .progression-chain__item {
-  padding: var(--spacing-2) 0;
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-3);
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-card);
+  padding: var(--spacing-3) var(--spacing-4);
+  min-height: var(--touch-target);
+  color: var(--text-secondary);
+  counter-increment: chain-step;
+}
+
+.progression-chain__item::before {
+  content: counter(chain-step);
+  min-width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: var(--bg-elevated);
+  border: 1.5px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: var(--font-size-label);
+  font-weight: var(--font-weight-bold);
+  color: var(--text-muted);
+  flex-shrink: 0;
+  font-feature-settings: "tnum";
 }
 
 .progression-chain__item--current {
-  font-weight: bold;
+  border-color: var(--accent);
+  background: var(--accent-dim);
+  color: var(--text-primary);
+  font-weight: var(--font-weight-semi);
+}
+
+.progression-chain__item--current::before {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--color-white);
+}
+
+.progression-chain__current-badge {
+  font-size: var(--font-size-label);
   color: var(--accent);
+  margin-left: auto;
+  font-weight: var(--font-weight-semi);
+}
+
+/* Next exercise panel */
+.progression-chain__next-exercise {
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-card);
+  padding: var(--spacing-4);
+  margin-top: var(--spacing-3);
+}
+
+.progression-chain__next-exercise h3 {
+  margin: 0 0 var(--spacing-2);
+  font-size: var(--font-size-body);
+  color: var(--text-primary);
+}
+
+.progression-chain__criteria {
+  margin: 0 0 var(--spacing-3);
+  padding: 0 0 0 var(--spacing-4);
+  font-size: var(--font-size-label);
+  color: var(--text-secondary);
+}
+
+.progression-chain__criteria li {
+  margin-bottom: var(--spacing-1);
+}
+
+.progression-chain__wiki-link {
+  font-size: var(--font-size-label);
+  color: var(--accent);
+}
+
+/* End of chain */
+.progression-chain__end-message,
+.progression-chain__orientation-message {
+  font-size: var(--font-size-label);
+  color: var(--text-secondary);
+  margin: var(--spacing-3) 0 0;
+  text-align: center;
 }
 
 .progression-chain__offline-banner {
@@ -26,4 +152,7 @@
   width: 100%;
   color: var(--danger);
   box-sizing: border-box;
+  border-radius: var(--radius-button);
+  margin-bottom: var(--spacing-3);
+  font-size: var(--font-size-label);
 }
