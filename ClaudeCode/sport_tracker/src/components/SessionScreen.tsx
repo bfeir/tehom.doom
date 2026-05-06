@@ -13,6 +13,7 @@ import { SessionRepository } from "../repositories/SessionRepository.js";
 import supabaseClient from "../lib/supabaseClient.js";
 import type { Session, ExerciseEntry } from "../types/index.js";
 import "../styles/session.css";
+import { TRANSITION_DURATION } from "../styles/tokens.js";
 
 const sessionRepository = new SessionRepository(supabaseClient, false);
 
@@ -78,6 +79,7 @@ export function SessionScreen({
   const { openSession } = useSessionStore();
   const [confirmClose, setConfirmClose] = useState(false);
   const [doneIndices, setDoneIndices] = useState<Set<number>>(new Set());
+  const [animatingIndex, setAnimatingIndex] = useState<number | null>(null);
 
   if (closedSession) {
     return <CloseSummary session={closedSession} />;
@@ -113,6 +115,8 @@ export function SessionScreen({
       }
       return next;
     });
+    setAnimatingIndex(index);
+    setTimeout(() => setAnimatingIndex(null), TRANSITION_DURATION);
   }
 
   return (
@@ -138,7 +142,7 @@ export function SessionScreen({
             <span className="session__reps">{entry.reps}</span>
             <button
               type="button"
-              className="session__complete-btn"
+              className={`session__complete-btn${animatingIndex === index ? " session__complete-btn--animated" : ""}`}
               aria-label={`Mark ${entry.exerciseName} as done`}
               onClick={() => handleToggleDone(index)}
             />

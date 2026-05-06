@@ -11,8 +11,8 @@
  * Mocks: useSessionLogger (hook), useRestTimer (hook), Supabase (no network).
  */
 
-import { describe, it, expect, vi, type Mock } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { describe, it, expect, vi, afterEach, type Mock } from "vitest";
+import { render, screen, fireEvent, act } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import type { Session, ExerciseEntry } from "../../../src/types/index.js";
 
@@ -270,6 +270,31 @@ describe("Session close summary groups entries by exercise name", () => {
       expect(syncElements.length).toBeGreaterThan(0);
     }
   );
+});
+
+// ---------------------------------------------------------------------------
+// Step 02-01 — Checkmark microinteraction
+// Test budget: 1 behavior × 2 = 2 max unit tests
+//   B1: After clicking complete button, it briefly has class 'session__complete-btn--animated'
+// ---------------------------------------------------------------------------
+
+describe("Checkmark microinteraction after set is saved (step 02-01)", () => {
+  /**
+   * B1: After clicking the complete button (saving a set), the button transiently
+   * acquires the class 'session__complete-btn--animated'.
+   *
+   * Given a session with one logged entry
+   * When the user clicks the complete (save) button for that exercise
+   * Then the button immediately gains className containing 'session__complete-btn--animated'
+   */
+  it("complete button has class 'session__complete-btn--animated' immediately after click", () => {
+    setupSessionLoggerMock([makeEntry()]);
+    const { container, unmount } = render(<SessionScreen sessionId="s1" userId="u1" />);
+    const completeBtn = container.querySelector(".session__complete-btn") as HTMLButtonElement;
+    act(() => { completeBtn.click(); });
+    expect(completeBtn.className).toContain("session__complete-btn--animated");
+    unmount();
+  });
 });
 
 // ---------------------------------------------------------------------------
