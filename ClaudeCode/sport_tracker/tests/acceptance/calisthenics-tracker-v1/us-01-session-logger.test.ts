@@ -320,7 +320,7 @@ describe("Session saved and queued when device is offline", () => {
     const { SessionRepository } = await import(
       "../../../src/repositories/SessionRepository.js"
     );
-    expect((offlineSessionPort as InstanceType<typeof SessionRepository>).getQueueDepth(USER_SOFIA)).toBe(1);
+    expect(await (offlineSessionPort as InstanceType<typeof SessionRepository>).getQueueDepth(USER_SOFIA)).toBe(1);
   });
 
   it("syncs offline sessions automatically when device reconnects", async () => {
