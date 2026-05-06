@@ -49,28 +49,28 @@ export function HomeScreen(): React.ReactElement {
 
       <nav className="home__nav" aria-label="Bottom navigation">
         <NavLink
-          to="/session"
+          to="/home/session"
           aria-label="Session"
           className={navItemClass}
         >
           Session
         </NavLink>
         <NavLink
-          to="/history"
+          to="/home/history"
           aria-label="History"
           className={navItemClass}
         >
           History
         </NavLink>
         <NavLink
-          to="/chain"
+          to="/home/chain"
           aria-label="Chain"
           className={navItemClass}
         >
           Chain
         </NavLink>
         <NavLink
-          to="/readiness"
+          to="/home/readiness"
           aria-label="Readiness"
           className={navItemClass}
         >

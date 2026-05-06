@@ -103,10 +103,10 @@ export const router = createBrowserRouter([
       { path: "readiness", element: <ReadinessPage /> },
     ],
   },
-  { path: "/session", element: <RequireAuth><SessionPage /></RequireAuth> },
-  { path: "/readiness", element: <RequireAuth><ReadinessPage /></RequireAuth> },
-  { path: "/history", element: <RequireAuth><HistoryPage /></RequireAuth> },
-  { path: "/chain", element: <RequireAuth><ChainPage /></RequireAuth> },
+  { path: "/session", element: <Navigate to="/home/session" replace /> },
+  { path: "/readiness", element: <Navigate to="/home/readiness" replace /> },
+  { path: "/history", element: <Navigate to="/home/history" replace /> },
+  { path: "/chain", element: <Navigate to="/home/chain" replace /> },
 ]);
 
 // ---------------------------------------------------------------------------
