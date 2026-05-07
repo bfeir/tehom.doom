@@ -1,0 +1,53 @@
+{
+  "roadmap": {
+    "project_id": "manual-rest-timer",
+    "created_at": "2026-05-06T00:00:00Z",
+    "total_steps": 3
+  },
+  "validation": {
+    "status": "approved",
+    "reviewed_by": "orchestrator",
+    "reviewed_at": "2026-05-06T00:00:00Z"
+  },
+  "phases": [
+    {
+      "id": "01",
+      "name": "Manual Timer and Set Counter",
+      "steps": [
+        {
+          "id": "01-01",
+          "name": "Remove auto-start timer from useSessionLogger",
+          "criteria": "logSet completes without starting rest timer; useTimerStore not imported in useSessionLogger; timerStore.start not called in useSessionLogger; unit test confirms timer store unchanged after logSet",
+          "files_to_modify": [
+            "src/hooks/useSessionLogger.ts",
+            "tests/unit/hooks/useSessionLogger.test.ts"
+          ],
+          "implementation_notes": "Remove timerStore.start(DEFAULT_REST_DURATION_MS), const timerStore = useTimerStore(), useTimerStore import, and DEFAULT_REST_DURATION_MS from useSessionLogger.ts."
+        },
+        {
+          "id": "01-02",
+          "name": "Make RestTimer always visible with idle state",
+          "criteria": "RestTimer renders idle state when isRunning is false; idle state shows Start Rest button calling start(); running state shows countdown and controls; sticky variant works in both states; unit test covers idle and running paths",
+          "files_to_modify": [
+            "src/components/RestTimer.tsx",
+            "src/styles/timer.css",
+            "tests/unit/components/RestTimer.test.tsx"
+          ],
+          "implementation_notes": "Remove 'if (!isRunning) return null'. Add idle branch with Start Rest button using start() from useRestTimer. Add timer--idle CSS class. Add padding-bottom to .session so sticky timer does not overlap content."
+        },
+        {
+          "id": "01-03",
+          "name": "Add set counter and timer context label",
+          "criteria": "Idle state shows next set number e.g. Set 1; running state shows rest after set N; set counter increments after logSet; setNumber prop optional; unit test verifies counter text",
+          "files_to_modify": [
+            "src/components/SessionScreen.tsx",
+            "src/components/RestTimer.tsx",
+            "src/styles/timer.css",
+            "tests/unit/components/SessionScreen.test.tsx"
+          ],
+          "implementation_notes": "Add optional setNumber prop to RestTimer. In SessionScreen pass setNumber={entryCount}. Idle: 'Set N+1'. Running: 'Rest after set N'. Show as timer__label element."
+        }
+      ]
+    }
+  ]
+}
