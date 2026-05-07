@@ -44,9 +44,15 @@ vi.mock("../../../src/stores/sessionStore.js", () => ({
   useSessionStore: vi.fn(() => ({ openSession: null })),
 }));
 
+// Mock useExerciseSearch to prevent real hook execution in tests
+vi.mock("../../../src/hooks/useExerciseSearch.js", () => ({
+  useExerciseSearch: vi.fn(() => ({ suggestions: [], isLoading: false, error: null })),
+}));
+
 // Scaffold import — will throw until implemented
 import { SessionScreen } from "../../../src/components/SessionScreen.js";
 import { useSessionLogger } from "../../../src/hooks/useSessionLogger.js";
+import { useExerciseSearch } from "../../../src/hooks/useExerciseSearch.js";
 import { beforeEach } from "vitest";
 
 // Default mock for useSessionLogger — keeps pre-existing tests working
@@ -345,6 +351,47 @@ describe("SessionScreen shows set counter context label in RestTimer (step 01-03
       expect(screen.getByText(expectedLabel)).toBeTruthy();
     }
   );
+});
+
+// ---------------------------------------------------------------------------
+// Step 01-02 — Exercise autocomplete datalist
+// Test budget: 2 behaviors × 2 = 4 max unit tests (using 2)
+//   B1: datalist with id="exercise-suggestions" is present in the DOM
+//   B2: datalist renders one <option> per suggestion from useExerciseSearch
+// ---------------------------------------------------------------------------
+
+describe("SessionScreen exercise autocomplete datalist (step 01-02)", () => {
+  /**
+   * B1: Given SessionScreen is rendered
+   * When the component mounts
+   * Then a <datalist> element with id="exercise-suggestions" is present in the DOM
+   */
+  it("renders a datalist element with id='exercise-suggestions' in the DOM", () => {
+    setupSessionLoggerMock();
+    const { container } = render(withQueryClient(<SessionScreen sessionId="s1" userId="u1" />));
+    const datalist = container.querySelector("#exercise-suggestions");
+    expect(datalist).not.toBeNull();
+    expect(datalist?.tagName.toLowerCase()).toBe("datalist");
+  });
+
+  /**
+   * B2: Given useExerciseSearch returns one suggestion
+   * When SessionScreen renders
+   * Then an <option> element with that exercise name appears inside the datalist
+   */
+  it("renders one option per suggestion returned by useExerciseSearch", () => {
+    (useExerciseSearch as unknown as Mock).mockReturnValue({
+      suggestions: [{ id: "1", name: "Push-up" }],
+      isLoading: false,
+      error: null,
+    });
+    setupSessionLoggerMock();
+    const { container } = render(withQueryClient(<SessionScreen sessionId="s1" userId="u1" />));
+    const datalist = container.querySelector("#exercise-suggestions") as HTMLElement;
+    expect(datalist).not.toBeNull();
+    const option = datalist.querySelector("option[value='Push-up']");
+    expect(option).not.toBeNull();
+  });
 });
 
 // ---------------------------------------------------------------------------

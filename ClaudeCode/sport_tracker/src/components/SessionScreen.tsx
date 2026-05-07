@@ -9,6 +9,7 @@
 import React, { useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useSessionLogger } from "../hooks/useSessionLogger.js";
+import { useExerciseSearch } from "../hooks/useExerciseSearch.js";
 import { useSessionStore } from "../stores/sessionStore.js";
 import { RestTimer } from "./RestTimer.js";
 import { SessionRepository } from "../repositories/SessionRepository.js";
@@ -88,6 +89,7 @@ export function SessionScreen({
   const [exerciseName, setExerciseName] = useState("");
   const [sets, setSets] = useState(3);
   const [reps, setReps] = useState(8);
+  const { suggestions } = useExerciseSearch({ query: exerciseName });
 
   if (closedSession) {
     return <CloseSummary session={closedSession} />;
@@ -200,7 +202,13 @@ export function SessionScreen({
             placeholder="e.g. Push-up"
             value={exerciseName}
             onChange={(e) => setExerciseName(e.target.value)}
+            list="exercise-suggestions"
           />
+          <datalist id="exercise-suggestions">
+            {suggestions.map((ex) => (
+              <option key={ex.id} value={ex.name} />
+            ))}
+          </datalist>
         </div>
 
         <div className="session__input-row">
