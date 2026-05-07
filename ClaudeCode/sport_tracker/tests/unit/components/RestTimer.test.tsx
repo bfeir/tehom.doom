@@ -171,6 +171,60 @@ describe("Idle timer (not yet started) shows the default duration", () => {
 });
 
 // ---------------------------------------------------------------------------
+// Idle state tests — step 01-02
+// Test Budget: 3 distinct behaviors × 2 = 6 max unit tests (using 3)
+// ---------------------------------------------------------------------------
+
+// ---------------------------------------------------------------------------
+// Acceptance: RestTimer renders idle state with Start Rest button
+// ---------------------------------------------------------------------------
+
+describe("RestTimer renders in idle state with a Start Rest button when isRunning is false", () => {
+  afterEach(() => {
+    cleanup();
+  });
+
+  /**
+   * Given the rest timer is not running (isRunning = false)
+   * When RestTimer renders
+   * Then it renders an idle state containing a "Start Rest" button
+   */
+  it("renders a Start Rest button when isRunning is false", () => {
+    (useRestTimer as ReturnType<typeof vi.fn>).mockReturnValue({
+      remaining: 90_000,
+      isRunning: false,
+      start: vi.fn(),
+      skip: vi.fn(),
+      extend: vi.fn(),
+      setDefaultDuration: vi.fn(),
+    });
+    render(<RestTimer />);
+    expect(screen.getByRole("button", { name: /start rest/i })).not.toBeNull();
+  });
+
+  /**
+   * Given the rest timer is not running
+   * When the user clicks the Start Rest button
+   * Then start() from useRestTimer is called
+   */
+  it("clicking Start Rest calls start()", async () => {
+    const start = vi.fn();
+    (useRestTimer as ReturnType<typeof vi.fn>).mockReturnValue({
+      remaining: 90_000,
+      isRunning: false,
+      start,
+      skip: vi.fn(),
+      extend: vi.fn(),
+      setDefaultDuration: vi.fn(),
+    });
+    const user = userEvent.setup();
+    render(<RestTimer />);
+    await user.click(screen.getByRole("button", { name: /start rest/i }));
+    expect(start).toHaveBeenCalledTimes(1);
+  });
+});
+
+// ---------------------------------------------------------------------------
 // BEM className tests — step 01-05
 // Test Budget: 5 distinct behaviors × 2 = 10 max unit tests (using 5)
 // ---------------------------------------------------------------------------
@@ -240,10 +294,11 @@ describe("RestTimer BEM classNames", () => {
       extend: vi.fn(),
       setDefaultDuration: vi.fn(),
     });
-    // Component returns null when not running, so just verify no timer--active in DOM
-    const { container } = render(<RestTimer />);
-    const active = container.querySelector(".timer--active");
-    expect(active).toBeNull();
+    // Component renders idle state — root element must exist but NOT have timer--active
+    render(<RestTimer />);
+    const root = screen.getByRole("timer");
+    expect(root).not.toBeNull();
+    expect(root.className).not.toContain("timer--active");
   });
 
   /**

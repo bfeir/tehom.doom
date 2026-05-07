@@ -4,6 +4,7 @@
   background: var(--bg-base);
   min-height: 100dvh;
   padding: var(--spacing-4);
+  padding-bottom: 80px; /* clear sticky timer banner (~56px height) above bottom nav */
   display: flex;
   flex-direction: column;
   gap: var(--spacing-4);

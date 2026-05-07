@@ -88,6 +88,16 @@
 }
 
 /* -------------------------------------------------------------------------
+   Modifier: timer--idle
+   When the timer is not running, show a muted idle state
+   ---------------------------------------------------------------------- */
+
+.timer:not(.timer--active) .timer__btn {
+  background: var(--bg-elevated);
+  color: var(--text-secondary);
+}
+
+/* -------------------------------------------------------------------------
    Modifier: timer--sticky
    Positions the timer as a fixed banner above the bottom nav (56px)
    ---------------------------------------------------------------------- */
