@@ -19,7 +19,7 @@ import { AuthScreen } from "./components/AuthScreen.js";
 import { HomeScreen } from "./components/HomeScreen.js";
 import { SessionScreen } from "./components/SessionScreen.js";
 import { ReadinessCard } from "./components/ReadinessCard.js";
-import { ExerciseHistory } from "./components/ExerciseHistory.js";
+import { SessionList } from "./components/SessionList.js";
 import { ProgressionChain } from "./components/ProgressionChain.js";
 import { RequireAuth } from "./components/RequireAuth.js";
 import { useReadinessSignal } from "./hooks/useReadinessSignal.js";
@@ -58,8 +58,7 @@ function HistoryPage(): React.ReactElement {
     plan: DEFAULT_PLAN,
   });
   return (
-    <ExerciseHistory
-      exerciseName={currentExercise ?? "All exercises"}
+    <SessionList
       sessions={sessions}
       isOffline={isOffline}
       lastSyncedAt={lastSyncedAt ?? undefined}
