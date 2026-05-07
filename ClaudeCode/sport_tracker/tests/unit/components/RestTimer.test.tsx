@@ -225,6 +225,38 @@ describe("RestTimer renders in idle state with a Start Rest button when isRunnin
 });
 
 // ---------------------------------------------------------------------------
+// Set counter label tests — step 01-03
+// Test Budget: 1 behavior × 2 = 2 max unit tests (using 1)
+//   B3: setNumber undefined → label element absent
+// ---------------------------------------------------------------------------
+
+describe("RestTimer omits label element when setNumber is not provided (step 01-03)", () => {
+  afterEach(() => {
+    cleanup();
+  });
+
+  /**
+   * B3: When setNumber is undefined, no .timer__label element is rendered.
+   *
+   * Given setNumber prop is omitted
+   * When RestTimer renders in idle state
+   * Then no .timer__label element is in the DOM
+   */
+  it("renders no .timer__label element when setNumber is undefined", () => {
+    (useRestTimer as ReturnType<typeof vi.fn>).mockReturnValue({
+      remaining: 90_000,
+      isRunning: false,
+      start: vi.fn(),
+      skip: vi.fn(),
+      extend: vi.fn(),
+      setDefaultDuration: vi.fn(),
+    });
+    render(<RestTimer />);
+    expect(document.querySelector(".timer__label")).toBeNull();
+  });
+});
+
+// ---------------------------------------------------------------------------
 // BEM className tests — step 01-05
 // Test Budget: 5 distinct behaviors × 2 = 10 max unit tests (using 5)
 // ---------------------------------------------------------------------------

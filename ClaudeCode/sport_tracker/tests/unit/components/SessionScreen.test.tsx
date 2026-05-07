@@ -305,6 +305,49 @@ describe("Checkmark microinteraction after set is saved (step 02-01)", () => {
 });
 
 // ---------------------------------------------------------------------------
+// Step 01-03 — Set counter context label in RestTimer
+// Test budget: 2 behaviors × 2 = 4 max unit tests (using 3)
+//   B1: idle with 0 sets → shows "Set 1"
+//   B2: idle with N sets → shows "Set N+1" (parametrized with B1)
+//   B3: setNumber undefined → label absent
+// ---------------------------------------------------------------------------
+
+// Mock useRestTimer so RestTimer renders without needing hook state
+vi.mock("../../../src/hooks/useRestTimer.js", () => ({
+  useRestTimer: vi.fn(() => ({
+    remaining: 90_000,
+    isRunning: false,
+    start: vi.fn(),
+    skip: vi.fn(),
+    extend: vi.fn(),
+    setDefaultDuration: vi.fn(),
+  })),
+}));
+
+describe("SessionScreen shows set counter context label in RestTimer (step 01-03)", () => {
+  /**
+   * B1+B2: When 0 sets are logged, RestTimer idle state shows "Set 1".
+   * When N sets are logged, RestTimer idle state shows "Set N+1".
+   *
+   * Given a session with entryCount sets logged
+   * When the SessionScreen renders in idle timer state
+   * Then the timer label shows "Set {entryCount + 1}"
+   */
+  it.each([
+    [0, "Set 1"],
+    [2, "Set 3"],
+  ])(
+    "shows '%s' in timer when %i sets have been logged",
+    (entryCount, expectedLabel) => {
+      const entries = Array.from({ length: entryCount }, (_, i) => makeEntry({ exerciseName: `Exercise ${i}` }));
+      setupSessionLoggerMock(entries);
+      render(withQueryClient(<SessionScreen sessionId="s1" userId="u1" />));
+      expect(screen.getByText(expectedLabel)).toBeTruthy();
+    }
+  );
+});
+
+// ---------------------------------------------------------------------------
 // Step 01-04 — BEM CSS class structure
 // Test budget: 4 behaviors × 2 = 8 max unit tests
 //   B1: root has class 'session'

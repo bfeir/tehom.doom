@@ -147,7 +147,7 @@ export function SessionScreen({
   return (
     <div className="session" aria-label="Session screen">
       {/* Sticky rest timer — appears above bottom nav after each logged set */}
-      <RestTimer sticky />
+      <RestTimer sticky setNumber={entryCount} />
 
       {/* Status */}
       {isLoading && <p className="session__saving" aria-live="polite">Saving…</p>}
