@@ -1,0 +1,40 @@
+{
+  "roadmap": {
+    "project_id": "session-history-drill-down",
+    "created_at": "2026-05-07T00:00:00Z",
+    "total_steps": 2
+  },
+  "validation": {
+    "status": "approved",
+    "reviewed_by": "orchestrator",
+    "reviewed_at": "2026-05-07T00:00:00Z"
+  },
+  "phases": [
+    {
+      "id": "01",
+      "name": "Session list with expandable drill-down",
+      "steps": [
+        {
+          "id": "01-01",
+          "name": "Create SessionList accordion component",
+          "criteria": "renders one card per session showing date and exercise count; clicking a session expands to show its entries; only one session expanded at a time; clicking again collapses; empty state shown when no sessions",
+          "files_to_modify": [
+            "src/components/SessionList.tsx",
+            "src/styles/history.css",
+            "tests/unit/components/SessionList.test.tsx"
+          ],
+          "implementation_notes": "New component SessionList. Props: sessions: SessionRow[] (import type from ExerciseHistory), isOffline: boolean, lastSyncedAt?: Date. Internal state: expandedId: string | null. Each session card shows: date (loggedAt.toLocaleDateString()), '{N} exercise{s}' count, chevron icon (▼/▶ or CSS rotation). Clicking toggles expandedId. When expanded, shows entries: exerciseName, sets x reps, formQuality (or dash). Reuse SessionRow type exported from ExerciseHistory.tsx. BEM: session-list, session-list__card, session-list__card--expanded, session-list__header, session-list__entry, session-list__count, session-list__chevron. Add CSS to history.css."
+        },
+        {
+          "id": "01-02",
+          "name": "Replace ExerciseHistory with SessionList in HistoryPage",
+          "criteria": "HistoryPage renders SessionList instead of ExerciseHistory; offline banner still shown; session data flows from useExerciseHistory to SessionList unchanged; ExerciseHistory component file kept intact",
+          "files_to_modify": [
+            "src/main.tsx"
+          ],
+          "implementation_notes": "In main.tsx HistoryPage function: add import for SessionList. Replace <ExerciseHistory ... /> with <SessionList sessions={sessions} isOffline={isOffline} lastSyncedAt={lastSyncedAt ?? undefined} />. Keep ExerciseHistory import only if used elsewhere; remove from HistoryPage render. The sessions prop shape (SessionRow[]) is already compatible since Session satisfies SessionRow."
+        }
+      ]
+    }
+  ]
+}
