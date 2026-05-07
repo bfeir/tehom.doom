@@ -25,3 +25,63 @@
   color: var(--danger);
   box-sizing: border-box;
 }
+
+/* ============================================================
+   SessionList — accordion BEM classes
+   ============================================================ */
+
+.session-list {
+  background: var(--bg-base);
+  padding: var(--spacing-4);
+}
+
+.session-list__card {
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  margin-bottom: var(--spacing-2);
+  overflow: hidden;
+}
+
+.session-list__card--expanded {
+  border-color: var(--primary, #4a90d9);
+}
+
+.session-list__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--spacing-3) var(--spacing-4);
+  cursor: pointer;
+  user-select: none;
+}
+
+.session-list__header:hover {
+  background: color-mix(in srgb, var(--primary, #4a90d9) 8%, transparent);
+}
+
+.session-list__meta {
+  display: flex;
+  gap: var(--spacing-3);
+}
+
+.session-list__chevron {
+  font-size: 0.75rem;
+  transition: transform 0.2s ease;
+}
+
+.session-list__entries {
+  list-style: none;
+  margin: 0;
+  padding: 0 var(--spacing-4) var(--spacing-3);
+}
+
+.session-list__entry {
+  padding: var(--spacing-1) 0;
+  font-size: 0.9rem;
+  color: var(--text-secondary, #555);
+}
+
+.session-list__empty {
+  color: var(--text-secondary, #555);
+  padding: var(--spacing-4);
+}
