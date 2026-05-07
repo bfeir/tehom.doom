@@ -9,7 +9,7 @@ CREATE TABLE IF NOT EXISTS exercises (
   id            UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   slug          TEXT UNIQUE NOT NULL,
   name          TEXT NOT NULL,
-  track         TEXT NOT NULL CHECK (track IN ('push', 'pull', 'legs', 'skill')),
+  track         TEXT NOT NULL CHECK (track IN ('push-up', 'hspu', 'row', 'pull-up', 'squat', 'nordic-curl', 'core', 'skill')),
   chain_order   INTEGER,
   rr_criteria   JSONB,
   rr_wiki_url   TEXT NOT NULL DEFAULT '',
@@ -43,7 +43,7 @@ CREATE INDEX IF NOT EXISTS idx_sessions_logged_at ON sessions (logged_at DESC);
 
 CREATE TABLE IF NOT EXISTS user_progression (
   user_id             TEXT NOT NULL,
-  track               TEXT NOT NULL CHECK (track IN ('push', 'pull', 'legs', 'skill')),
+  track               TEXT NOT NULL CHECK (track IN ('push-up', 'hspu', 'row', 'pull-up', 'squat', 'nordic-curl', 'core', 'skill')),
   current_exercise_id UUID NOT NULL REFERENCES exercises(id),
   updated_at          TIMESTAMPTZ NOT NULL DEFAULT now(),
   PRIMARY KEY (user_id, track)
