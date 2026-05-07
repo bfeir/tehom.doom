@@ -54,19 +54,19 @@ beforeEach(() => {
 });
 
 // ---------------------------------------------------------------------------
-// First scenario — logSet calls addEntry and starts timer (WD-03)
+// First scenario — logSet calls addEntry but does NOT start the timer
 // ---------------------------------------------------------------------------
 
-describe("logSet saves the entry and starts the rest timer immediately (WD-03)", () => {
+describe("logSet saves the entry without auto-starting the rest timer", () => {
   /**
    * Given Marco is in an active session
    * When he calls logSet with exercise, sets, and reps
    * Then SessionPort.addEntry() is called with the correct entry data
-   * And the rest timer starts (timerStore.start) without any readiness fetch
+   * And the rest timer is NOT started (timer starts only on explicit user action)
    * And the readiness engine is NOT called (WD-02)
    */
   it(
-    "logSet invokes addEntry and timerStore.start, never ReadinessPort",
+    "logSet invokes addEntry and does NOT call timerStore.start",
     async () => {
       const { result } = renderHook(() =>
         useSessionLogger({
@@ -95,7 +95,7 @@ describe("logSet saves the entry and starts the rest timer immediately (WD-03)",
         formQuality: null,
         rpe: null,
       });
-      expect(mockTimerStart).toHaveBeenCalledTimes(1);
+      expect(mockTimerStart).not.toHaveBeenCalled();
     }
   );
 });
@@ -198,6 +198,44 @@ describe("When SessionPort.addEntry fails the hook exposes an error state", () =
 
       expect(mockTimerStart).not.toHaveBeenCalled();
       expect(result.current.error).toBeTruthy();
+    }
+  );
+});
+
+// ---------------------------------------------------------------------------
+// ACCEPTANCE: logSet must NOT auto-start the rest timer (manual-rest-timer step 01-01)
+// ---------------------------------------------------------------------------
+
+describe("logSet completes without auto-starting the rest timer", () => {
+  /**
+   * Given Marco is in an active session
+   * When he calls logSet with valid exercise data
+   * Then SessionPort.addEntry() is called
+   * And timerStore.start is NOT called (timer must be started manually by the user)
+   */
+  it(
+    "logSet does not call timerStore.start after saving a set",
+    async () => {
+      const { result } = renderHook(() =>
+        useSessionLogger({
+          sessionId: "session-123",
+          sessionPort: mockSessionPort as never,
+        })
+      );
+
+      await act(async () => {
+        await result.current.logSet({
+          exerciseId: "exercise-pike-push-up",
+          exerciseName: "Pike Push-ups (PPP progression)",
+          sets: 3,
+          reps: 8,
+          formQuality: null,
+          rpe: null,
+        });
+      });
+
+      expect(mockAddEntry).toHaveBeenCalledTimes(1);
+      expect(mockTimerStart).not.toHaveBeenCalled();
     }
   );
 });

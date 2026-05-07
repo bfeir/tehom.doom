@@ -2,16 +2,12 @@
 // Custom hook wrapping SessionPort.
 // DT-03: does NOT import or call ReadinessEngine or fn-readiness-engine.
 // WD-02: readiness is handled separately (UI-04).
-// WD-03: starts rest timer after successful addEntry.
 
 import { useState } from "react";
 import type { SessionPort } from "../ports/SessionPort.js";
 import type { ExerciseEntry, Session } from "../types/index.js";
-import { useTimerStore } from "../stores/timerStore.js";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { SessionRepository } from "../repositories/SessionRepository.js";
-
-const DEFAULT_REST_DURATION_MS = 90_000;
 
 /**
  * Factory: returns a SessionPort backed by IndexedDB when offline,
@@ -56,7 +52,6 @@ export function useSessionLogger({
   const [currentSession, setCurrentSession] = useState<Session | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const timerStore = useTimerStore();
 
   async function logSet(entry: ExerciseEntry): Promise<void> {
     validateEntry(entry);
@@ -65,7 +60,6 @@ export function useSessionLogger({
     try {
       const updated = await sessionPort.addEntry(sessionId, entry);
       setCurrentSession(updated);
-      timerStore.start(DEFAULT_REST_DURATION_MS);
     } catch (err) {
       const message = err instanceof Error ? err.message : "Failed to log set";
       setError(message);
