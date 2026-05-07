@@ -1,0 +1,40 @@
+{
+  "roadmap": {
+    "project_id": "fix-exercise-autocomplete",
+    "created_at": "2026-05-07T00:00:00Z",
+    "total_steps": 2
+  },
+  "validation": {
+    "status": "approved",
+    "reviewed_by": "orchestrator",
+    "reviewed_at": "2026-05-07T00:00:00Z"
+  },
+  "phases": [
+    {
+      "id": "01",
+      "name": "Exercise autocomplete fix",
+      "steps": [
+        {
+          "id": "01-01",
+          "name": "Create useExerciseSearch hook",
+          "criteria": "hook returns suggestions array from ExercisePort.search(); enabled only when query has 2+ chars; returns empty array when query is shorter; unit test mocks ExercisePort and verifies results",
+          "files_to_modify": [
+            "src/hooks/useExerciseSearch.ts",
+            "tests/unit/hooks/useExerciseSearch.test.ts"
+          ],
+          "implementation_notes": "New file src/hooks/useExerciseSearch.ts. Use TanStack Query useQuery with queryKey=['exerciseSearch', trimmed], enabled when trimmed.length >= 2, staleTime: 60_000. Accept exercisePort as optional injected dependency (defaults to new ExerciseRepository(supabaseClient)). Return { suggestions, isLoading, error }. The ExercisePort.search() signature is: search(nameFragment: string): Promise<Exercise[]>."
+        },
+        {
+          "id": "01-02",
+          "name": "Wire datalist autocomplete in SessionScreen",
+          "criteria": "exercise input has list attribute pointing to datalist; datalist renders one option per suggestion; typing 2+ chars shows suggestions from useExerciseSearch; unit test verifies datalist is present in DOM",
+          "files_to_modify": [
+            "src/components/SessionScreen.tsx",
+            "tests/unit/components/SessionScreen.test.tsx"
+          ],
+          "implementation_notes": "Import useExerciseSearch. Add const { suggestions } = useExerciseSearch({ query: exerciseName }) inside component. Add list='exercise-suggestions' to the existing #session-exercise input. Add <datalist id='exercise-suggestions'> after the input with suggestions.map to <option value={ex.name} />. No other changes."
+        }
+      ]
+    }
+  ]
+}
