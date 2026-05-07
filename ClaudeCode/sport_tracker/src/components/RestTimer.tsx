@@ -5,15 +5,21 @@ import { useRestTimer } from "../hooks/useRestTimer.js";
 import { formatRemaining } from "../lib/timer.js";
 import "../styles/timer.css";
 
-export function RestTimer(): React.ReactElement | null {
+interface RestTimerProps {
+  sticky?: boolean;
+}
+
+export function RestTimer({ sticky = false }: RestTimerProps): React.ReactElement | null {
   const { remaining, isRunning, skip, extend } = useRestTimer();
 
   if (!isRunning) {
     return null;
   }
 
+  const className = `timer timer--active${sticky ? " timer--sticky" : ""}`;
+
   return (
-    <div role="timer" aria-live="polite" className="timer timer--active">
+    <div role="timer" aria-live="polite" className={className}>
       <span className="timer__display">
         {formatRemaining(remaining)}
       </span>

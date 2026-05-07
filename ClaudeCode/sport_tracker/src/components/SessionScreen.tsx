@@ -10,6 +10,7 @@ import React, { useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useSessionLogger } from "../hooks/useSessionLogger.js";
 import { useSessionStore } from "../stores/sessionStore.js";
+import { RestTimer } from "./RestTimer.js";
 import { SessionRepository } from "../repositories/SessionRepository.js";
 import supabaseClient from "../lib/supabaseClient.js";
 import type { Session, ExerciseEntry } from "../types/index.js";
@@ -145,6 +146,9 @@ export function SessionScreen({
 
   return (
     <div className="session" aria-label="Session screen">
+      {/* Sticky rest timer — appears above bottom nav after each logged set */}
+      <RestTimer sticky />
+
       {/* Status */}
       {isLoading && <p className="session__saving" aria-live="polite">Saving…</p>}
       {error && <p className="session__error" role="alert">{error}</p>}
