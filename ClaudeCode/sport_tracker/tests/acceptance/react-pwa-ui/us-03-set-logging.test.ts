@@ -217,7 +217,7 @@ describe("High rep counts are accepted without validation errors", () => {
 // ---------------------------------------------------------------------------
 
 describe("Zero reps is rejected by domain validation", () => {
-  it.skip(
+  it(
     "addEntry throws when reps is zero — domain invariant: at least 1 rep required",
     async () => {
       /**
@@ -242,7 +242,7 @@ describe("Zero reps is rejected by domain validation", () => {
     }
   );
 
-  it.skip(
+  it(
     "addEntry throws when sets is zero — domain invariant: at least 1 set required",
     async () => {
       /**
@@ -270,7 +270,7 @@ describe("Zero reps is rejected by domain validation", () => {
 // ---------------------------------------------------------------------------
 
 describe("Form quality score outside 1-5 is rejected", () => {
-  it.skip(
+  it(
     "addEntry throws when form_quality is 6 — only values 1-5 are valid",
     async () => {
       /**
@@ -299,7 +299,7 @@ describe("Form quality score outside 1-5 is rejected", () => {
 // ---------------------------------------------------------------------------
 
 describe("Entry with no exercise identification is rejected", () => {
-  it.skip(
+  it(
     "addEntry throws when both exerciseId and exerciseName are null or empty",
     async () => {
       /**
