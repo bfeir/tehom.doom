@@ -23,6 +23,7 @@ export interface ExerciseEntry {
   reps: number;
   formQuality: FormQuality | null;
   rpe: RPE | null;
+  note?: string;                 // optional qualitative note attached to the entry
 }
 
 export interface Session {

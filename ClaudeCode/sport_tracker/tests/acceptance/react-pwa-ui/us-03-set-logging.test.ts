@@ -82,7 +82,7 @@ describe("Set logged with registered exercise, sets, and reps", () => {
 // ---------------------------------------------------------------------------
 
 describe("Optional note is stored with the set entry", () => {
-  it.skip(
+  it(
     "a note attached to a set entry is persisted and retrievable from session history",
     async () => {
       /**
