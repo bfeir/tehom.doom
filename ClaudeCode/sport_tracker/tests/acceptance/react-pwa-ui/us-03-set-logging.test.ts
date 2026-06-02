@@ -106,7 +106,7 @@ describe("Optional note is stored with the set entry", () => {
     }
   );
 
-  it.skip(
+  it(
     "form quality score 1-5 is persisted alongside the set entry",
     async () => {
       /**
@@ -128,7 +128,7 @@ describe("Optional note is stored with the set entry", () => {
     }
   );
 
-  it.skip(
+  it(
     "exercise pre-filled from previous set entry matches the last saved exercise",
     async () => {
       /**
@@ -159,7 +159,7 @@ describe("Optional note is stored with the set entry", () => {
 // ---------------------------------------------------------------------------
 
 describe("Free-text exercise is saved without exercise_id", () => {
-  it.skip(
+  it(
     "an exercise name not in the registry is saved with exercise_name populated and exercise_id null",
     async () => {
       /**
@@ -189,7 +189,7 @@ describe("Free-text exercise is saved without exercise_id", () => {
 // ---------------------------------------------------------------------------
 
 describe("High rep counts are accepted without validation errors", () => {
-  it.skip(
+  it(
     "logging 25 reps for a timed hold is accepted as a positive integer",
     async () => {
       /**
@@ -329,7 +329,7 @@ describe("Entry with no exercise identification is rejected", () => {
 // ---------------------------------------------------------------------------
 
 describe("Set logged offline saves to the queue without any error shown", () => {
-  it.skip(
+  it(
     "addEntry with offline flag writes to the local queue and returns a valid entry",
     async () => {
       /**
