@@ -75,7 +75,7 @@ describe("Set logged offline saves to the queue silently within 500 milliseconds
 // ---------------------------------------------------------------------------
 
 describe("Offline queue depth increments with each logged set", () => {
-  it.skip(
+  it(
     "after logging 2 sets offline the queue depth is 2",
     async () => {
       /**
@@ -114,7 +114,7 @@ describe("Offline queue depth increments with each logged set", () => {
 // ---------------------------------------------------------------------------
 
 describe("Offline queue persists across app restarts", () => {
-  it.skip(
+  it(
     "sessions written to the offline queue are still present after the port is recreated",
     async () => {
       /**
