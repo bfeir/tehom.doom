@@ -150,7 +150,7 @@ describe("Offline queue persists across app restarts", () => {
 // ---------------------------------------------------------------------------
 
 describe("Queued sessions sync to the remote store in chronological order with no duplicates", () => {
-  it.skip(
+  it.skipIf(!process.env['SUPABASE_URL'] || !process.env['SUPABASE_SERVICE_ROLE_KEY'])(
     "sync replays 3 offline sessions in the order they were queued",
     async () => {
       /**
