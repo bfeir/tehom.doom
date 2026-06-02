@@ -202,7 +202,7 @@ describe("Open session from a previous launch is recoverable", () => {
 // ---------------------------------------------------------------------------
 
 describe("Closing a session with no sets logged requires explicit confirmation", () => {
-  it.skip(
+  it(
     "closing an empty session does not silently persist an empty record",
     async () => {
       /**
@@ -228,7 +228,7 @@ describe("Closing a session with no sets logged requires explicit confirmation",
 // ---------------------------------------------------------------------------
 
 describe("Closed sessions are immutable", () => {
-  it.skip(
+  it(
     "adding an entry to a closed session throws a domain error",
     async () => {
       /**
@@ -258,7 +258,7 @@ describe("Closed sessions are immutable", () => {
 // ---------------------------------------------------------------------------
 
 describe("Session close while offline shows sync-pending status", () => {
-  it.skip(
+  it(
     "a session created offline is closed without error and remains in the offline queue",
     async () => {
       /**
@@ -290,7 +290,7 @@ describe("Session close while offline shows sync-pending status", () => {
 // ---------------------------------------------------------------------------
 
 describe("Crash recovery continue path does not create duplicate sessions", () => {
-  it.skip(
+  it(
     "continuing an open session does not create a new session record",
     async () => {
       /**
