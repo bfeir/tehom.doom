@@ -163,7 +163,7 @@ describe("New session starts from the home screen", () => {
 // ---------------------------------------------------------------------------
 
 describe("Open session from a previous launch is recoverable", () => {
-  it.skip(
+  it(
     "an open session created before the current app launch is still retrievable",
     async () => {
       /**
@@ -179,7 +179,7 @@ describe("Open session from a previous launch is recoverable", () => {
     }
   );
 
-  it.skip(
+  it(
     "discarding an open session closes it without adding any entries",
     async () => {
       /**
