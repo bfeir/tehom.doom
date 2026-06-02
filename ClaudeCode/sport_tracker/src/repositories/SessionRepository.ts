@@ -87,11 +87,19 @@ export class SessionRepository implements SessionPort {
     return queued;
   }
 
+  private validateEntry(entry: ExerciseEntry): void {
+    if (entry.reps <= 0)
+      throw new Error('ExerciseEntry: reps must be at least 1');
+    if (entry.sets <= 0)
+      throw new Error('ExerciseEntry: sets must be at least 1');
+    if (entry.formQuality !== null && (entry.formQuality < 1 || entry.formQuality > 5))
+      throw new Error('ExerciseEntry: formQuality must be between 1 and 5');
+    if (!entry.exerciseId && !entry.exerciseName?.trim())
+      throw new Error('ExerciseEntry: exerciseId or exerciseName must be provided');
+  }
+
   async addEntry(sessionId: string, entry: ExerciseEntry): Promise<Session> {
-    if (entry.reps <= 0) throw new Error('ExerciseEntry: reps must be at least 1');
-    if (entry.sets <= 0) throw new Error('ExerciseEntry: sets must be at least 1');
-    if (entry.formQuality !== null && (entry.formQuality < 1 || entry.formQuality > 5)) throw new Error('ExerciseEntry: formQuality must be between 1 and 5');
-    if (!entry.exerciseId && !entry.exerciseName?.trim()) throw new Error('ExerciseEntry: exerciseId or exerciseName must be provided');
+    this.validateEntry(entry);
 
     if (this.offline) {
       const queued = await this.getOpenQueuedSession(sessionId, "addEntry");
