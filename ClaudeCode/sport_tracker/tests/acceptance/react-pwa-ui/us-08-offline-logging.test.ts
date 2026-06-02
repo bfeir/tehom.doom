@@ -187,7 +187,7 @@ describe("Queued sessions sync to the remote store in chronological order with n
 // ---------------------------------------------------------------------------
 
 describe("Sync failure on reconnect retries silently with exponential backoff", () => {
-  it.skip(
+  it(
     "when the remote store is unavailable the offline badge remains and no error toast is shown",
     async () => {
       /**
@@ -204,7 +204,7 @@ describe("Sync failure on reconnect retries silently with exponential backoff", 
     }
   );
 
-  it.skip(
+  it(
     "after all retries are exhausted a tap on the badge reveals a retry-available message",
     async () => {
       /**
@@ -223,7 +223,7 @@ describe("Sync failure on reconnect retries silently with exponential backoff", 
 // ---------------------------------------------------------------------------
 
 describe("Partial session with online and offline sets does not produce duplicates on sync", () => {
-  it.skip(
+  it(
     "sets written online before going offline are not re-written during sync replay",
     async () => {
       /**
@@ -245,7 +245,7 @@ describe("Partial session with online and offline sets does not produce duplicat
 // ---------------------------------------------------------------------------
 
 describe("IndexedDB storage pressure does not corrupt queued sessions", () => {
-  it.skip(
+  it(
     "when IndexedDB quota is approached the queue write fails with a user-visible message",
     async () => {
       /**
@@ -267,7 +267,7 @@ describe("IndexedDB storage pressure does not corrupt queued sessions", () => {
 // ---------------------------------------------------------------------------
 
 describe("App loads fully from service worker cache when offline", () => {
-  it.skip(
+  it(
     "the exercise registry is available for autocomplete without a network connection",
     async () => {
       /**
