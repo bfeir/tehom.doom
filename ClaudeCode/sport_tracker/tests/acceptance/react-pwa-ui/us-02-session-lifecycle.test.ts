@@ -107,7 +107,7 @@ describe("Marco completes a full workout session from start to close", () => {
 // ---------------------------------------------------------------------------
 
 describe("New session starts from the home screen", () => {
-  it.skip(
+  it(
     "session state is open and ready to accept entries immediately after creation",
     async () => {
       /**
@@ -122,7 +122,7 @@ describe("New session starts from the home screen", () => {
     }
   );
 
-  it.skip(
+  it(
     "session close shows summary listing each exercise with total sets and reps",
     async () => {
       /**
