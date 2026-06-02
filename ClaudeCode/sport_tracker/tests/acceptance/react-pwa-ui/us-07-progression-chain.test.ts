@@ -179,7 +179,7 @@ describe("End of the progression chain shows a helpful message, not a blank scre
 // ---------------------------------------------------------------------------
 
 describe("Free-text exercise that is not in the registry shows orientation message", () => {
-  it.skip(
+  it(
     "when current exercise is not in the registry the chain is still shown for manual orientation",
     async () => {
       /**
@@ -192,7 +192,7 @@ describe("Free-text exercise that is not in the registry shows orientation messa
        * the UI shows the orientation message alongside the full chain.
        * Verified in ProgressionChain.test.tsx component test.
        */
-      const chain = await exerciseRepo.findProgressionChain("push");
+      const chain = await exerciseRepo.findProgressionChain("push-up");
       // The chain is always available — free-text exercises don't corrupt it
       expect(chain.length).toBeGreaterThan(0);
     }
@@ -228,7 +228,7 @@ describe("Progression chain has no gaps in chain order", () => {
 // ---------------------------------------------------------------------------
 
 describe("Progression chain loads offline from the cached exercise registry", () => {
-  it.skip(
+  it(
     "the exercise registry is pre-loadable and does not require a live network call to render the chain",
     async () => {
       /**
