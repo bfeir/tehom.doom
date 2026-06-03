@@ -41,7 +41,7 @@ vi.mock("../../../src/hooks/useSessionLogger.js", () => ({
 
 // Mock useSessionStore to prevent store side effects
 vi.mock("../../../src/stores/sessionStore.js", () => ({
-  useSessionStore: vi.fn(() => ({ openSession: null })),
+  useSessionStore: vi.fn(() => ({ openSession: null, closeSession: vi.fn(), setCurrentExercise: vi.fn() })),
 }));
 
 // Mock useExerciseSearch to prevent real hook execution in tests
@@ -53,6 +53,7 @@ vi.mock("../../../src/hooks/useExerciseSearch.js", () => ({
 import { SessionScreen } from "../../../src/components/SessionScreen.js";
 import { useSessionLogger } from "../../../src/hooks/useSessionLogger.js";
 import { useExerciseSearch } from "../../../src/hooks/useExerciseSearch.js";
+import { useSessionStore } from "../../../src/stores/sessionStore.js";
 import { beforeEach } from "vitest";
 
 // Default mock for useSessionLogger — keeps pre-existing tests working
@@ -480,5 +481,88 @@ describe("SessionScreen BEM class structure (step 01-04)", () => {
     await user.click(completeBtn);
     const doneRows = document.querySelectorAll(".session__exercise--done");
     expect(doneRows.length).toBeGreaterThan(0);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Step 01-01 — setCurrentExercise wiring via useEffect
+// Test budget: 2 behaviors × 2 = 4 max unit tests (using 2)
+//   B1: exerciseName matches a suggestion → setCurrentExercise called with match id
+//   B2: exerciseName does not match any suggestion → setCurrentExercise called with null
+// ---------------------------------------------------------------------------
+
+describe("setCurrentExercise wiring (step 01-01)", () => {
+  const pushUpSuggestion = {
+    id: "ex-push-up",
+    name: "Push-up",
+    slug: "push-up",
+    track: "push-up",
+    chainOrder: 1,
+    criteria: null,
+    rrWikiUrl: "",
+  };
+
+  /**
+   * B1: When exerciseName exactly matches a suggestion's name
+   * Then setCurrentExercise is called with the matching exercise ID
+   *
+   * Given useExerciseSearch returns [{ id: 'ex-push-up', name: 'Push-up', ... }]
+   * When the user changes the exercise input to 'Push-up'
+   * Then setCurrentExercise was called with 'ex-push-up'
+   */
+  it("calls setCurrentExercise with the matching exercise id when exerciseName matches a suggestion", async () => {
+    const setCurrentExerciseSpy = vi.fn();
+    (useSessionStore as unknown as Mock).mockReturnValue({
+      openSession: null,
+      closeSession: vi.fn(),
+      setCurrentExercise: setCurrentExerciseSpy,
+    });
+    (useExerciseSearch as unknown as Mock).mockReturnValue({
+      suggestions: [pushUpSuggestion],
+      isLoading: false,
+      error: null,
+    });
+    setupSessionLoggerMock();
+
+    const { container } = render(withQueryClient(<SessionScreen sessionId="s1" userId="u1" />));
+    const input = container.querySelector("#session-exercise") as HTMLInputElement;
+
+    await act(async () => {
+      fireEvent.change(input, { target: { value: "Push-up" } });
+    });
+
+    expect(setCurrentExerciseSpy).toHaveBeenCalledWith("ex-push-up");
+  });
+
+  /**
+   * B2: When exerciseName does not match any suggestion
+   * Then setCurrentExercise is called with null
+   *
+   * Given useExerciseSearch returns [{ id: 'ex-push-up', name: 'Push-up', ... }]
+   * When the user changes the exercise input to 'Free-form text'
+   * Then setCurrentExercise was called with null
+   */
+  it("calls setCurrentExercise with null when exerciseName does not match any suggestion", async () => {
+    const setCurrentExerciseSpy = vi.fn();
+    (useSessionStore as unknown as Mock).mockReturnValue({
+      openSession: null,
+      closeSession: vi.fn(),
+      setCurrentExercise: setCurrentExerciseSpy,
+    });
+    (useExerciseSearch as unknown as Mock).mockReturnValue({
+      suggestions: [pushUpSuggestion],
+      isLoading: false,
+      error: null,
+    });
+    setupSessionLoggerMock();
+
+    const { container } = render(withQueryClient(<SessionScreen sessionId="s1" userId="u1" />));
+    const input = container.querySelector("#session-exercise") as HTMLInputElement;
+
+    await act(async () => {
+      fireEvent.change(input, { target: { value: "Free-form text" } });
+    });
+
+    expect(setCurrentExerciseSpy).toHaveBeenCalledWith(null);
   });
 });

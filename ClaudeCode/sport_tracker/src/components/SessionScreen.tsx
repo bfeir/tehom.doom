@@ -6,7 +6,7 @@
 // When closedSession prop is provided, renders the close summary instead
 // of the active logging UI.
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useSessionLogger } from "../hooks/useSessionLogger.js";
 import { useExerciseSearch } from "../hooks/useExerciseSearch.js";
@@ -80,7 +80,7 @@ export function SessionScreen({
     sessionId,
     sessionPort: sessionRepository,
   });
-  const { closeSession } = useSessionStore();
+  const { closeSession, setCurrentExercise } = useSessionStore();
   const [confirmClose, setConfirmClose] = useState(false);
   const [isClosing, setIsClosing] = useState(false);
   const [closeError, setCloseError] = useState<string | null>(null);
@@ -90,6 +90,11 @@ export function SessionScreen({
   const [sets, setSets] = useState(3);
   const [reps, setReps] = useState(8);
   const { suggestions } = useExerciseSearch({ query: exerciseName });
+
+  useEffect(() => {
+    const match = suggestions.find(s => s.name === exerciseName.trim());
+    setCurrentExercise(match?.id ?? null);
+  }, [exerciseName, suggestions, setCurrentExercise]);
 
   if (closedSession) {
     return <CloseSummary session={closedSession} />;
