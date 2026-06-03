@@ -102,7 +102,7 @@ describe("Progression chain shows current exercise and the next step in the chai
 // ---------------------------------------------------------------------------
 
 describe("Next exercise shows RR criteria and wiki attribution without extra navigation", () => {
-  it.skip(
+  it(
     "the exercise after Pike Push-up in the push chain has rr_criteria and rr_wiki_url populated",
     async () => {
       /**
@@ -111,16 +111,15 @@ describe("Next exercise shows RR criteria and wiki attribution without extra nav
        * Then he sees the rep range and consecutive sessions required (from rr_criteria)
        * And the RR wiki URL is shown as the source citation
        */
-      const chain = await exerciseRepo.findProgressionChain("push");
+      const chain = await exerciseRepo.findProgressionChain("hspu");
       const pikeIndex = chain.findIndex((e) => e.id === PIKE_PUSH_UP_ID);
       expect(pikeIndex).toBeGreaterThanOrEqual(0);
+      expect(pikeIndex + 1).toBeLessThan(chain.length);
 
-      if (pikeIndex + 1 < chain.length) {
-        const nextExercise = chain[pikeIndex + 1];
-        expect(nextExercise.rrCriteria).not.toBeNull();
-        expect(nextExercise.rrWikiUrl).toBeTruthy();
-        expect(nextExercise.rrWikiUrl).toMatch(/reddit|bodyweightfitness|bwf/i);
-      }
+      const nextExercise = chain[pikeIndex + 1];
+      expect(nextExercise.criteria).not.toBeNull();
+      expect(nextExercise.rrWikiUrl).toBeTruthy();
+      expect(nextExercise.rrWikiUrl).toMatch(/reddit|bodyweightfitness|bwf/i);
     }
   );
 });
