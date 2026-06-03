@@ -145,7 +145,7 @@ describe("Marco extends the rest timer by 15 seconds", () => {
 // ---------------------------------------------------------------------------
 
 describe("Marco skips the rest timer", () => {
-  it.skip(
+  it(
     "after skip the timer is no longer running and remaining is cleared",
     async () => {
       /**
@@ -170,7 +170,7 @@ describe("Marco skips the rest timer", () => {
 // ---------------------------------------------------------------------------
 
 describe("Marco changes the default rest duration to 2 minutes", () => {
-  it.skip(
+  it(
     "updated default duration persists in localStorage and is used by the next timer",
     async () => {
       /**
@@ -237,7 +237,7 @@ describe("Timer state is accurate after iOS app suspension", () => {
 // ---------------------------------------------------------------------------
 
 describe("Timer auto-starts on set save without confirmation (WD-03)", () => {
-  it.skip(
+  it(
     "timerStore transitions to running state immediately when set-saved event is received",
     async () => {
       /**
@@ -267,7 +267,7 @@ describe("Timer auto-starts on set save without confirmation (WD-03)", () => {
 // ---------------------------------------------------------------------------
 
 describe("Timer displays time in MM:SS format with minimum 48px font", () => {
-  it.skip(
+  it(
     "remaining of 90 seconds formats as '1:30'",
     () => {
       /**
