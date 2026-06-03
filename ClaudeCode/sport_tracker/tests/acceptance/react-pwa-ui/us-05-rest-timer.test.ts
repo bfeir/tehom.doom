@@ -71,7 +71,7 @@ describe("Timer remaining is always computed from Date.now() anchor, never from 
 // ---------------------------------------------------------------------------
 
 describe("Timer corrects itself after app is backgrounded", () => {
-  it.skip(
+  it(
     "remaining time is correct when recomputed after 60 seconds of background suspension",
     async () => {
       /**
@@ -91,7 +91,7 @@ describe("Timer corrects itself after app is backgrounded", () => {
     }
   );
 
-  it.skip(
+  it(
     "remaining is zero (not negative) when app returns after timer has fully elapsed",
     async () => {
       /**
@@ -115,7 +115,7 @@ describe("Timer corrects itself after app is backgrounded", () => {
 // ---------------------------------------------------------------------------
 
 describe("Marco extends the rest timer by 15 seconds", () => {
-  it.skip(
+  it(
     "adding 15 seconds to an in-progress timer produces a new duration anchor",
     async () => {
       /**
@@ -194,7 +194,7 @@ describe("Marco changes the default rest duration to 2 minutes", () => {
 // ---------------------------------------------------------------------------
 
 describe("Timer state is accurate after iOS app suspension", () => {
-  it.skip(
+  it(
     "remaining is recomputed correctly from anchor after arbitrary background duration",
     async () => {
       /**
@@ -212,7 +212,7 @@ describe("Timer state is accurate after iOS app suspension", () => {
     }
   );
 
-  it.skip(
+  it(
     "completion ping fires on foreground return if timer expired while backgrounded",
     async () => {
       /**
