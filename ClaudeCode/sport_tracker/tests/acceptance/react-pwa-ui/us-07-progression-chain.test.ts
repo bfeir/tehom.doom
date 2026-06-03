@@ -39,13 +39,13 @@ beforeAll(async () => {
   PIKE_PUSH_UP_ID = exercises[0]?.id ?? "exercise-pike-push-up";
 
   // Get last exercise in push chain for end-of-chain test
-  const pushChain = await exerciseRepo.findProgressionChain("push");
+  const pushChain = await exerciseRepo.findProgressionChain("push-up");
   PUSH_CHAIN_LAST_ID = pushChain[pushChain.length - 1]?.id ?? "";
 
-  // Seed: USER_MARCO is at Pike Push-up in push track
+  // Seed: USER_MARCO is at Pike Push-up in push-up track
   await supabaseAdmin.from("user_progression").upsert({
     user_id: USER_MARCO,
-    track: "push",
+    track: "push-up",
     current_exercise_id: PIKE_PUSH_UP_ID,
     updated_at: new Date().toISOString(),
   });
@@ -54,7 +54,7 @@ beforeAll(async () => {
   if (PUSH_CHAIN_LAST_ID) {
     await supabaseAdmin.from("user_progression").upsert({
       user_id: USER_END_OF_CHAIN,
-      track: "push",
+      track: "push-up",
       current_exercise_id: PUSH_CHAIN_LAST_ID,
       updated_at: new Date().toISOString(),
     });
@@ -85,11 +85,11 @@ describe("Progression chain shows current exercise and the next step in the chai
    * And the next exercise in the chain is visible with its RR criteria
    */
   it("getCurrentProgression returns the current exercise with the full push chain in order", async () => {
-    const progression = await progressionPort.getCurrentProgression(USER_MARCO, "push");
+    const progression = await progressionPort.getCurrentProgression(USER_MARCO, "push-up");
     expect(progression).not.toBeNull();
     expect(progression!.currentExerciseId).toBe(PIKE_PUSH_UP_ID);
 
-    const chain = await exerciseRepo.findProgressionChain("push");
+    const chain = await exerciseRepo.findProgressionChain("push-up");
     expect(chain.length).toBeGreaterThan(1);
     // Chain must be in ascending chain_order
     const orders = chain.map((e) => e.chainOrder);
@@ -130,7 +130,7 @@ describe("Next exercise shows RR criteria and wiki attribution without extra nav
 // ---------------------------------------------------------------------------
 
 describe("All exercises in the push chain have RR wiki attribution", () => {
-  it.skip(
+  it(
     "every exercise in the push chain has a non-empty rr_wiki_url (SC-03 attribution requirement)",
     async () => {
       /**
@@ -138,7 +138,7 @@ describe("All exercises in the push chain have RR wiki attribution", () => {
        * When the full chain is retrieved
        * Then every exercise entry has an rr_wiki_url (no missing attributions)
        */
-      const chain = await exerciseRepo.findProgressionChain("push");
+      const chain = await exerciseRepo.findProgressionChain("push-up");
       for (const exercise of chain) {
         expect(exercise.rrWikiUrl).toBeTruthy();
       }
@@ -151,23 +151,23 @@ describe("All exercises in the push chain have RR wiki attribution", () => {
 // ---------------------------------------------------------------------------
 
 describe("End of the progression chain shows a helpful message, not a blank screen", () => {
-  it.skip(
+  it(
     "when the user is at the last exercise in the chain the next-exercise slot is empty",
     async () => {
       /**
-       * Given Marco is at the last exercise in the tracked push chain
+       * Given Marco is at the last exercise in the tracked push-up chain
        * When he views the Progression tab
        * Then there is no next exercise entry (next slot is null or absent)
-       * And the UI can show "You are at the end of the currently tracked push progression"
+       * And the UI can show "You are at the end of the currently tracked push-up progression"
        * And no blank screen or runtime error occurs
        */
       if (!PUSH_CHAIN_LAST_ID) return; // chain not seeded — skip
-      const chain = await exerciseRepo.findProgressionChain("push");
+      const chain = await exerciseRepo.findProgressionChain("push-up");
       const lastExercise = chain[chain.length - 1];
       expect(lastExercise.id).toBe(PUSH_CHAIN_LAST_ID);
       // There is no exercise with a higher chain_order in the same track
       const higherOrdered = chain.filter(
-        (e) => e.track === "push" && e.chainOrder > lastExercise.chainOrder
+        (e) => e.track === "push-up" && e.chainOrder > lastExercise.chainOrder
       );
       expect(higherOrdered).toHaveLength(0);
     }
@@ -204,16 +204,16 @@ describe("Free-text exercise that is not in the registry shows orientation messa
 // ---------------------------------------------------------------------------
 
 describe("Progression chain has no gaps in chain order", () => {
-  it.skip(
+  it(
     "push chain chain_order values form a contiguous sequence with no gaps larger than 1",
     async () => {
       /**
-       * Given the exercise registry has been seeded with the push progression chain
+       * Given the exercise registry has been seeded with the push-up progression chain
        * When the chain is retrieved ordered by chain_order
        * Then consecutive chain_order values differ by exactly 1 (no gaps)
        * And the chain starts at chain_order 1
        */
-      const chain = await exerciseRepo.findProgressionChain("push");
+      const chain = await exerciseRepo.findProgressionChain("push-up");
       const orders = chain.map((e) => e.chainOrder);
       for (let i = 1; i < orders.length; i++) {
         const gap = orders[i] - orders[i - 1];
