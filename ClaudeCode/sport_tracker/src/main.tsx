@@ -81,7 +81,7 @@ type Track = (typeof TRACKS)[number]["id"];
 
 function ChainPage(): React.ReactElement {
   const user = useAuthStore((s) => s.user);
-  const [track, setTrack] = React.useState<Track>("push");
+  const [track, setTrack] = React.useState<Track>("push-up");
   const { chain, currentExerciseId } = useProgressionChain({
     userId: user?.id ?? "",
     track,
