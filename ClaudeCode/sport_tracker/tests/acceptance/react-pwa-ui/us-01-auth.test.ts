@@ -81,7 +81,7 @@ describe("Returning user bypasses auth screen on app reopen", () => {
 // ---------------------------------------------------------------------------
 
 describe("Email/password sign-up creates an account with isolated data", () => {
-  it.skip(
+  it(
     "new user signs up with email and password and receives a confirmed account",
     async () => {
       /**
@@ -107,7 +107,7 @@ describe("Email/password sign-up creates an account with isolated data", () => {
 // ---------------------------------------------------------------------------
 
 describe("Each user's training data is isolated from other users", () => {
-  it.skip(
+  it(
     "Marco's sessions cannot be accessed using Luis's credentials",
     async () => {
       /**
