@@ -96,7 +96,7 @@ describe("NOT YET signal shows the specific gap to advancement", () => {
    * And the streak progress "2 of 3" is visible
    * And the criterion summary text is shown without any punitive language
    */
-  it.skip(
+  it(
     "renders NOT YET headline and streak count from the signal",
     () => {
       render(<ReadinessCard signal={NOT_YET_SIGNAL} />);
@@ -112,7 +112,7 @@ describe("NOT YET signal shows the specific gap to advancement", () => {
 // ---------------------------------------------------------------------------
 
 describe("READY signal shows progression call-to-action", () => {
-  it.skip(
+  it(
     "renders READY headline and a View Progression Chain button",
     () => {
       /**
@@ -135,7 +135,7 @@ describe("READY signal shows progression call-to-action", () => {
 // ---------------------------------------------------------------------------
 
 describe("REVIEW signal provides form guidance without punitive language", () => {
-  it.skip(
+  it(
     "renders REVIEW headline and criterion summary without negative judgement words",
     () => {
       /**
@@ -204,7 +204,7 @@ describe("Edge Function timeout produces a retry-available message", () => {
 // ---------------------------------------------------------------------------
 
 describe("First-ever session for an exercise shows orientation message", () => {
-  it.skip(
+  it(
     "renders the orientation message when signal is null and user has no prior sessions",
     () => {
       /**
@@ -224,7 +224,7 @@ describe("First-ever session for an exercise shows orientation message", () => {
 // ---------------------------------------------------------------------------
 
 describe("RR wiki attribution is visible in the readiness card", () => {
-  it.skip(
+  it(
     "renders a link to the RR wiki URL from the signal",
     () => {
       /**

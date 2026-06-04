@@ -40,9 +40,6 @@ function NotYetCard({ signal }: { signal: ReadinessSignal }): React.ReactElement
   return (
     <div className="readiness-card readiness-card--not-yet">
       <h2>Not yet</h2>
-      <p>
-        {signal.streakCurrent} of {signal.streakRequired} consecutive sessions completed
-      </p>
       <p>{signal.criterionSummary}</p>
       {signal.rrWikiUrl && (
         <a href={signal.rrWikiUrl} target="_blank" rel="noreferrer">
