@@ -70,7 +70,7 @@ describe("useReadinessSignal is idle before the user explicitly requests a check
 // ---------------------------------------------------------------------------
 
 describe("Calling check() triggers the readiness fetch and returns the signal", () => {
-  it.skip(
+  it(
     "check() calls calculate() and exposes the signal when the fetch resolves",
     async () => {
       /**
@@ -102,7 +102,7 @@ describe("Calling check() triggers the readiness fetch and returns the signal", 
 // ---------------------------------------------------------------------------
 
 describe("check() when offline sets error to offline-unavailable without calling the port", () => {
-  it.skip(
+  it(
     "when navigator.onLine is false check() sets isOffline to true and does not call calculate()",
     async () => {
       /**
@@ -133,7 +133,7 @@ describe("check() when offline sets error to offline-unavailable without calling
 // ---------------------------------------------------------------------------
 
 describe("Readiness fetch timeout after 5 seconds sets hasTimedOut to true", () => {
-  it.skip(
+  it(
     "when calculate() takes longer than 5 seconds the hook sets hasTimedOut=true",
     async () => {
       /**
@@ -158,8 +158,8 @@ describe("Readiness fetch timeout after 5 seconds sets hasTimedOut to true", () 
       act(() => {
         vi.advanceTimersByTime(5_001);
       });
-      await waitFor(() => expect(result.current.hasTimedOut).toBe(true));
       vi.useRealTimers();
+      await waitFor(() => expect(result.current.hasTimedOut).toBe(true));
     }
   );
 });
@@ -169,7 +169,7 @@ describe("Readiness fetch timeout after 5 seconds sets hasTimedOut to true", () 
 // ---------------------------------------------------------------------------
 
 describe("calculate() failure exposes a plain-language error state", () => {
-  it.skip(
+  it(
     "when calculate() rejects the hook error state is set with a readable message",
     async () => {
       /**
@@ -185,10 +185,10 @@ describe("calculate() failure exposes a plain-language error state", () => {
           exerciseId: "exercise-pike-push-up",
         })
       );
-      await act(async () => {
+      act(() => {
         result.current.check();
-        await waitFor(() => expect(result.current.isLoading).toBe(false));
       });
+      await waitFor(() => expect(result.current.isLoading).toBe(false));
       expect(result.current.error).toBeTruthy();
       expect(result.current.error).not.toMatch(/internal server error/i);
     }
