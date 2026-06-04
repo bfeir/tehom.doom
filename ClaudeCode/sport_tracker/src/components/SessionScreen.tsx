@@ -88,7 +88,9 @@ export function SessionScreen({
   const [animatingIndex, setAnimatingIndex] = useState<number | null>(null);
   const [exerciseName, setExerciseName] = useState("");
   const [sets, setSets] = useState(3);
-  const [reps, setReps] = useState(8);
+  const [reps, setReps] = useState(0);
+  const [repsError, setRepsError] = useState<string | null>(null);
+  const [exerciseError, setExerciseError] = useState<string | null>(null);
   const { suggestions } = useExerciseSearch({ query: exerciseName });
 
   useEffect(() => {
@@ -141,6 +143,16 @@ export function SessionScreen({
   }
 
   async function handleLogSet(): Promise<void> {
+    setRepsError(null);
+    setExerciseError(null);
+    if (reps < 1) {
+      setRepsError("Enter at least 1 rep");
+      return;
+    }
+    if (exerciseName.trim() === "") {
+      setExerciseError("Please enter an exercise name");
+      return;
+    }
     await logSet({
       exerciseId: null,
       exerciseName: exerciseName.trim(),
@@ -149,6 +161,7 @@ export function SessionScreen({
       formQuality: null,
       rpe: null,
     });
+    setExerciseName("");
   }
 
   return (
@@ -204,16 +217,39 @@ export function SessionScreen({
             id="session-exercise"
             className="session__input"
             type="text"
+            role="combobox"
+            aria-expanded={suggestions.length > 0}
+            aria-autocomplete="list"
             placeholder="e.g. Push-up"
             value={exerciseName}
             onChange={(e) => setExerciseName(e.target.value)}
             list="exercise-suggestions"
           />
+          {/* Native datalist for browser autocomplete (used by step 01-02 tests) */}
           <datalist id="exercise-suggestions">
             {suggestions.map((ex) => (
               <option key={ex.id} value={ex.name} />
             ))}
           </datalist>
+          {/* Accessible suggestion list for ARIA combobox interaction */}
+          {suggestions.length > 0 && (
+            <ul className="session__suggestions" role="listbox">
+              {suggestions.map((ex) => (
+                <li
+                  key={`opt-${ex.id}`}
+                  role="option"
+                  aria-selected={false}
+                  className="session__suggestion-item"
+                  onClick={() => setExerciseName(ex.name)}
+                >
+                  {ex.name}
+                </li>
+              ))}
+            </ul>
+          )}
+          {exerciseError && (
+            <p className="session__field-error" role="alert">{exerciseError}</p>
+          )}
         </div>
 
         <div className="session__input-row">
@@ -235,21 +271,24 @@ export function SessionScreen({
               id="session-reps"
               className="session__input"
               type="number"
-              min={1}
+              min={0}
               max={100}
               value={reps}
-              onChange={(e) => setReps(Math.max(1, parseInt(e.target.value, 10) || 1))}
+              onChange={(e) => setReps(parseInt(e.target.value, 10) || 0)}
             />
+            {repsError && (
+              <p className="session__field-error">{repsError}</p>
+            )}
           </div>
         </div>
 
         <button
           type="button"
           className="session__log-btn"
-          disabled={isLoading || exerciseName.trim() === ""}
+          disabled={isLoading}
           onClick={() => void handleLogSet()}
         >
-          Log Set
+          Save
         </button>
       </div>
 
