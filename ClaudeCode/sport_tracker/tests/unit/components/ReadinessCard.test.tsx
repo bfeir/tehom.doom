@@ -10,6 +10,7 @@
  * All scenarios except the first are marked skip.
  */
 
+import "@testing-library/jest-dom/vitest";
 import { describe, it, expect, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 
@@ -156,7 +157,7 @@ describe("REVIEW signal provides form guidance without punitive language", () =>
 // ---------------------------------------------------------------------------
 
 describe("Offline state shows plain-language message with no error code", () => {
-  it.skip(
+  it(
     "renders the offline message when signal is unavailable due to no connectivity",
     () => {
       /**
@@ -180,7 +181,7 @@ describe("Offline state shows plain-language message with no error code", () => 
 // ---------------------------------------------------------------------------
 
 describe("Edge Function timeout produces a retry-available message", () => {
-  it.skip(
+  it(
     "renders 'Could not compute readiness. Try again.' when the signal fetch has timed out",
     () => {
       /**
