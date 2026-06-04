@@ -203,7 +203,7 @@ describe("First session for an exercise shows orientation, not a signal state", 
 // ---------------------------------------------------------------------------
 
 describe("Readiness check attempted while offline shows plain-language message", () => {
-  it.skip(
+  it(
     "when the readiness check cannot reach the backend the result describes the connectivity need",
     async () => {
       /**
@@ -227,7 +227,7 @@ describe("Readiness check attempted while offline shows plain-language message",
 // ---------------------------------------------------------------------------
 
 describe("Edge Function timeout is handled with a spinner then a plain-language error", () => {
-  it.skip(
+  it(
     "when fn-readiness-engine exceeds 5 seconds the user sees a retry-able error message",
     async () => {
       /**
@@ -251,7 +251,7 @@ describe("Edge Function timeout is handled with a spinner then a plain-language 
 // ---------------------------------------------------------------------------
 
 describe("Readiness check is never triggered automatically on set save", () => {
-  it.skip(
+  it(
     "saving a set does not call the readiness engine — timer starts without waiting for readiness",
     async () => {
       /**
@@ -294,7 +294,7 @@ describe("Readiness is unavailable for exercises not in the registry", () => {
 // ---------------------------------------------------------------------------
 
 describe("Readiness card is accessible while rest timer is running", () => {
-  it.skip(
+  it(
     "navigating to the readiness card does not stop the rest timer",
     async () => {
       /**
