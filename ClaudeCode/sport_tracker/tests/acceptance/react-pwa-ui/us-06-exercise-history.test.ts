@@ -219,7 +219,7 @@ describe("Empty history state for an exercise never logged", () => {
 // ---------------------------------------------------------------------------
 
 describe("History is filtered to the requesting user's data only", () => {
-  it.skip(
+  it(
     "Marco's history request does not include Luis's sessions for the same exercise",
     async () => {
       /**
@@ -247,7 +247,7 @@ describe("History is filtered to the requesting user's data only", () => {
 // ---------------------------------------------------------------------------
 
 describe("Long notes are truncated at 40 characters in the history table", () => {
-  it.skip(
+  it(
     "a note longer than 40 characters is truncated with an ellipsis in the history row",
     async () => {
       /**
