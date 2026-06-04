@@ -10,7 +10,7 @@ import "../styles/auth.css";
 
 type Mode = "signin" | "signup";
 
-function mapAuthError(error: { message?: string } | null): string {
+export function mapAuthError(error: { message?: string } | null): string {
   if (!error) return "";
   const msg = error.message ?? "";
 
