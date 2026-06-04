@@ -40,12 +40,12 @@ beforeAll(async () => {
   PIKE_PUSH_UP_ID = exercises[0]?.id ?? "exercise-pike-push-up";
 
   // Seed: USER_MARCO — 5 sessions of Pike Push-ups with varied data
-  const notesAndForms: [number, number, string | null][] = [
+  const notesAndForms: [number, number | null, string | null][] = [
     [8, 4, "Strong"],
     [8, 3, "Tired"],
-    [7, null as unknown as number, null],
-    [6, null as unknown as number, "A bit ill"],
-    [5, null as unknown as number, "First try"],
+    [7, null, null],
+    [6, null, "A bit ill"],
+    [5, null, "First try"],
   ];
   for (const [reps, form, note] of notesAndForms) {
     const s = await sessionPort.create(USER_MARCO);
