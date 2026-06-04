@@ -153,7 +153,7 @@ describe("Each user's training data is isolated from other users", () => {
 // ---------------------------------------------------------------------------
 
 describe("First-time sign-in attempted offline shows a helpful message", () => {
-  it.skip(
+  it(
     "offline auth attempt produces a plain-language message with no raw error code",
     async () => {
       /**
@@ -179,7 +179,7 @@ describe("First-time sign-in attempted offline shows a helpful message", () => {
 // ---------------------------------------------------------------------------
 
 describe("Auth error messages are plain language without technical codes", () => {
-  it.skip(
+  it(
     "incorrect password produces a human-readable message without HTTP codes or stack traces",
     async () => {
       /**
@@ -190,8 +190,14 @@ describe("Auth error messages are plain language without technical codes", () =>
        *
        * Implementation: authStore maps Supabase Auth error codes to plain-language strings.
        * The exact message string is verified in AuthScreen.test.tsx (component test).
+       *
+       * Note: uses anon client — service-role bypasses password enforcement.
        */
-      const { error } = await supabaseAdmin.auth.signInWithPassword({
+      const supabaseAnon = createClient(
+        process.env["SUPABASE_URL"]!,
+        process.env["SUPABASE_ANON_KEY"]!
+      );
+      const { error } = await supabaseAnon.auth.signInWithPassword({
         email: TEST_EMAIL_MARCO,
         password: "wrong-password-intentional",
       });
