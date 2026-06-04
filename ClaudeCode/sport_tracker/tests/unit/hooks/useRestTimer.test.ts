@@ -15,10 +15,12 @@ import { renderHook, act } from "@testing-library/react";
 
 // Scaffold import — will throw until implemented
 import { useRestTimer } from "../../../src/hooks/useRestTimer.js";
+import { useTimerStore } from "../../../src/stores/timerStore.js";
 
 beforeEach(() => {
   vi.useFakeTimers();
   localStorage.clear();
+  useTimerStore.getState().reset();
 });
 
 afterEach(() => {
@@ -50,7 +52,7 @@ describe("Rest timer starts in idle state before a set is saved", () => {
 // ---------------------------------------------------------------------------
 
 describe("Calling start() transitions the timer to running state", () => {
-  it.skip(
+  it(
     "isRunning becomes true immediately after start() is called",
     () => {
       /**
@@ -156,7 +158,7 @@ describe("Extending the timer by 15 seconds increases remaining by 15 seconds", 
 // ---------------------------------------------------------------------------
 
 describe("Default duration persists across hook re-mounts via localStorage", () => {
-  it.skip(
+  it(
     "after setDefaultDuration(120000) a new hook instance reads 120000 as the default",
     () => {
       /**
@@ -204,7 +206,7 @@ describe("Remaining is clamped to zero, never negative", () => {
 // ---------------------------------------------------------------------------
 
 describe("onComplete callback fires when timer reaches zero", () => {
-  it.skip(
+  it(
     "the onComplete handler is called exactly once when the timer expires",
     () => {
       /**
