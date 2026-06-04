@@ -11,8 +11,10 @@
  */
 
 import "@testing-library/jest-dom/vitest";
-import { describe, it, expect, vi } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { describe, it, expect, vi, afterEach } from "vitest";
+import { render, screen, cleanup } from "@testing-library/react";
+
+afterEach(cleanup);
 
 // Scaffold import — will throw until implemented
 import { ExerciseHistory } from "../../../src/components/ExerciseHistory.js";
@@ -63,7 +65,7 @@ describe("History renders as tabular rows, not a chart (WD-04)", () => {
    * Then the rows are rendered in a table with date, sets, reps, form quality, note
    * And there is no chart or graph element
    */
-  it.skip(
+  it(
     "renders a table with one row per session containing date, sets, reps, form quality, note",
     () => {
       render(
@@ -80,7 +82,7 @@ describe("History renders as tabular rows, not a chart (WD-04)", () => {
       expect(rows).toHaveLength(3);
       // Data visible in rows
       expect(screen.getByText("Apr 21")).toBeInTheDocument();
-      expect(screen.getByText("3×8")).toBeInTheDocument();
+      expect(screen.getAllByText("3×8")).toHaveLength(2);
       expect(screen.getByText("Strong")).toBeInTheDocument();
       // No chart element
       expect(screen.queryByRole("img", { name: /chart/i })).toBeNull();
@@ -93,7 +95,7 @@ describe("History renders as tabular rows, not a chart (WD-04)", () => {
 // ---------------------------------------------------------------------------
 
 describe("Form quality score is visible in each history row", () => {
-  it.skip(
+  it(
     "renders the form quality score 4/5 and 3/5 in the appropriate rows",
     () => {
       /**
@@ -119,7 +121,7 @@ describe("Form quality score is visible in each history row", () => {
 // ---------------------------------------------------------------------------
 
 describe("Long notes are truncated at 40 characters with ellipsis in the table row", () => {
-  it.skip(
+  it(
     "a note longer than 40 characters is displayed truncated with '...' appended",
     () => {
       /**
@@ -152,7 +154,7 @@ describe("Long notes are truncated at 40 characters with ellipsis in the table r
 // ---------------------------------------------------------------------------
 
 describe("Empty history shows a helpful message and Log CTA", () => {
-  it.skip(
+  it(
     "renders empty state message and a Log First Set button when sessions array is empty",
     () => {
       /**

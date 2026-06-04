@@ -43,15 +43,17 @@ export function ExerciseHistory({ exerciseName, sessions, isOffline, lastSyncedA
         </div>
       )}
       {sessions.length === 0 ? (
-        <p>{`No sessions logged yet for ${exerciseName}.`}</p>
+        <div className="exercise-history__empty">
+          <p>{`No sessions logged yet for ${exerciseName}.`}</p>
+          <button type="button">Log your first set</button>
+        </div>
       ) : (
         <table className="exercise-history__table">
           <thead className="exercise-history__header">
             <tr>
               <th>Date</th>
               <th>Exercise</th>
-              <th>Sets</th>
-              <th>Reps</th>
+              <th>Sets×Reps</th>
               <th>Form Quality</th>
               <th>Note</th>
             </tr>
@@ -60,11 +62,10 @@ export function ExerciseHistory({ exerciseName, sessions, isOffline, lastSyncedA
             {sessions.map((session) =>
               session.entries.map((entry, idx) => (
                 <tr key={`${session.id}-${idx}`} className="exercise-history__row">
-                  <td>{session.loggedAt.toLocaleDateString()}</td>
+                  <td>{session.loggedAt.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</td>
                   <td>{entry.exerciseName}</td>
-                  <td>{entry.sets}</td>
-                  <td>{entry.reps}</td>
-                  <td>{entry.formQuality ?? "—"}</td>
+                  <td>{`${entry.sets}×${entry.reps}`}</td>
+                  <td>{entry.formQuality !== null ? `${entry.formQuality}/5` : "—"}</td>
                   <td>{truncateNote(entry.note)}</td>
                 </tr>
               ))
