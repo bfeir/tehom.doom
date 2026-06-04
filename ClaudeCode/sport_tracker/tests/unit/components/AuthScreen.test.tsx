@@ -10,7 +10,7 @@ import { render, screen, cleanup } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router-dom";
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { AuthScreen } from "../../../src/components/AuthScreen";
+import { AuthScreen, mapAuthError } from "../../../src/components/AuthScreen";
 import { useAuthStore } from "../../../src/stores/authStore";
 
 vi.mock("../../../src/lib/supabaseClient", () => ({
@@ -29,6 +29,30 @@ function renderAuthScreen() {
     </MemoryRouter>
   );
 }
+
+describe("mapAuthError", () => {
+  it("returns empty string for null error", () => {
+    expect(mapAuthError(null)).toBe("");
+  });
+
+  it("returns connection message for network error", () => {
+    const msg = mapAuthError({ message: "Failed to fetch" });
+    expect(msg).toContain("connection");
+    expect(msg).not.toMatch(/\b[0-9]{3}\b/);
+  });
+
+  it("returns plain-language message for invalid credentials", () => {
+    const msg = mapAuthError({ message: "Invalid login credentials" });
+    expect(msg).toContain("email or password");
+    expect(msg).not.toMatch(/\b[0-9]{3}\b/);
+  });
+
+  it("returns fallback message for unknown errors", () => {
+    const msg = mapAuthError({ message: "Something unexpected happened" });
+    expect(msg).toBeTruthy();
+    expect(msg).not.toMatch(/\b[0-9]{3}\b/);
+  });
+});
 
 describe("AuthScreen BEM classNames", () => {
   beforeEach(() => {
