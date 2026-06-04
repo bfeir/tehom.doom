@@ -2,16 +2,47 @@
 
 import React from "react";
 import { useRestTimer } from "../hooks/useRestTimer.js";
-import { formatRemaining } from "../lib/timer.js";
+import { computeRemaining, formatRemaining } from "../lib/timer.js";
 import "../styles/timer.css";
 
 interface RestTimerProps {
   sticky?: boolean;
   setNumber?: number;
+  startedAt?: number | null;
+  duration?: number;
+  isRunning?: boolean;
+  onExtend?: (ms: number) => void;
+  onSkip?: () => void;
 }
 
-export function RestTimer({ sticky = false, setNumber }: RestTimerProps): React.ReactElement {
-  const { remaining, isRunning, start, skip, extend } = useRestTimer();
+export function RestTimer({
+  sticky = false,
+  setNumber,
+  startedAt,
+  duration,
+  isRunning: isRunningProp,
+  onExtend,
+  onSkip,
+}: RestTimerProps): React.ReactElement {
+  const isControlled = isRunningProp !== undefined;
+
+  const hook = isControlled ? null : useRestTimer(); // eslint-disable-line react-hooks/rules-of-hooks
+
+  const isRunning = isControlled ? isRunningProp : hook!.isRunning;
+
+  const remaining = isControlled
+    ? computeControlledRemaining(startedAt, duration)
+    : hook!.remaining;
+
+  const handleExtend = isControlled
+    ? () => onExtend?.(15_000)
+    : () => hook!.extend(15_000);
+
+  const handleSkip = isControlled
+    ? () => onSkip?.()
+    : () => hook!.skip();
+
+  const handleStart = isControlled ? () => {} : () => hook!.start();
 
   const className = `timer${sticky ? " timer--sticky" : ""}${isRunning ? " timer--active" : ""}`;
 
@@ -26,10 +57,10 @@ export function RestTimer({ sticky = false, setNumber }: RestTimerProps): React.
             {formatRemaining(remaining)}
           </span>
           <div className="timer__controls">
-            <button type="button" className="timer__btn" onClick={() => extend(15_000)}>
+            <button type="button" className="timer__btn" onClick={handleExtend}>
               +15s
             </button>
-            <button type="button" className="timer__btn" onClick={() => skip()}>
+            <button type="button" className="timer__btn" onClick={handleSkip}>
               Skip
             </button>
           </div>
@@ -39,13 +70,30 @@ export function RestTimer({ sticky = false, setNumber }: RestTimerProps): React.
           {setNumber !== undefined && (
             <span className="timer__label">Set {setNumber + 1}</span>
           )}
-          <div className="timer__controls">
-            <button type="button" className="timer__btn" onClick={() => start()}>
-              Start Rest
-            </button>
-          </div>
+          {isControlled ? (
+            <span className="timer__display">
+              {formatRemaining(remaining)}
+            </span>
+          ) : (
+            <div className="timer__controls">
+              <button type="button" className="timer__btn" onClick={handleStart}>
+                Start Rest
+              </button>
+            </div>
+          )}
         </>
       )}
     </div>
   );
+}
+
+function computeControlledRemaining(
+  startedAt: number | null | undefined,
+  duration: number | undefined
+): number {
+  const durationMs = duration ?? 90_000;
+  if (startedAt == null) {
+    return durationMs;
+  }
+  return computeRemaining(startedAt, durationMs, Date.now());
 }
