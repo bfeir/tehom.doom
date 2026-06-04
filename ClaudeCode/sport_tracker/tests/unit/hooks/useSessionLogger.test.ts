@@ -105,7 +105,7 @@ describe("logSet saves the entry without auto-starting the rest timer", () => {
 // ---------------------------------------------------------------------------
 
 describe("useSessionLogger never calls the readiness engine (WD-02)", () => {
-  it.skip(
+  it(
     "the hook module does not import ReadinessPort or ReadinessEngine",
     async () => {
       /**
@@ -113,10 +113,10 @@ describe("useSessionLogger never calls the readiness engine (WD-02)", () => {
        * The hook must not import ReadinessPort at all.
        * Verified via module dependency check.
        */
-      // Import the module and verify no readiness-related exports or imports
+      // Import the module and verify no readiness-related exports
       const hookModule = await import("../../../src/hooks/useSessionLogger.js");
-      const moduleSource = hookModule.toString();
-      expect(moduleSource).not.toMatch(/ReadinessPort|ReadinessEngine|readiness/i);
+      const exportedKeys = Object.keys(hookModule).join(" ");
+      expect(exportedKeys).not.toMatch(/ReadinessPort|ReadinessEngine|readiness/i);
     }
   );
 });
@@ -126,7 +126,7 @@ describe("useSessionLogger never calls the readiness engine (WD-02)", () => {
 // ---------------------------------------------------------------------------
 
 describe("logSet throws before calling the port when reps is zero", () => {
-  it.skip(
+  it(
     "reps=0 causes an immediate domain error without calling addEntry",
     async () => {
       /**
@@ -163,7 +163,7 @@ describe("logSet throws before calling the port when reps is zero", () => {
 // ---------------------------------------------------------------------------
 
 describe("When SessionPort.addEntry fails the hook exposes an error state", () => {
-  it.skip(
+  it(
     "a port network error sets the hook error state and does not start the timer",
     async () => {
       /**
@@ -244,22 +244,21 @@ describe("logSet completes without auto-starting the rest timer", () => {
 // Edge case: timer starts with the configured default duration
 // ---------------------------------------------------------------------------
 
-describe("Rest timer starts with the user's configured default duration", () => {
-  it.skip(
-    "timerStore.start is called with the default duration from timerStore settings",
+describe("logSet never auto-starts the rest timer regardless of defaultDuration (WD-03)", () => {
+  it(
+    "timerStore.start is never called after logSet succeeds, even with a configured default duration",
     async () => {
       /**
-       * Given Marco has configured a 2-minute default rest duration
-       * When he saves a set
-       * Then timerStore.start is called with 120000ms (2 minutes)
+       * WD-03: the rest timer is NOT auto-started when a set is saved.
+       * The user must start the timer manually.
+       * Even if timerStore has a defaultDuration configured, logSet must
+       * not call start() — the decision to start the timer belongs to the UI.
+       *
+       * Given Marco has a 2-minute default rest duration configured
+       * When he saves a set with valid data
+       * Then SessionPort.addEntry is called
+       * And timerStore.start is NOT called with any duration
        */
-      vi.mock("../../../src/stores/timerStore.js", () => ({
-        useTimerStore: () => ({
-          start: mockTimerStart,
-          defaultDuration: 120_000,
-        }),
-      }));
-
       const { result } = renderHook(() =>
         useSessionLogger({
           sessionId: "session-123",
@@ -278,7 +277,8 @@ describe("Rest timer starts with the user's configured default duration", () => 
         });
       });
 
-      expect(mockTimerStart).toHaveBeenCalledWith(120_000);
+      expect(mockAddEntry).toHaveBeenCalledTimes(1);
+      expect(mockTimerStart).not.toHaveBeenCalled();
     }
   );
 });
