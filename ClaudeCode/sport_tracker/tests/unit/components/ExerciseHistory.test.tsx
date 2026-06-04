@@ -1,3 +1,4 @@
+// @vitest-environment happy-dom
 /**
  * ExerciseHistory Component — Unit Tests
  *
@@ -9,6 +10,7 @@
  * All scenarios except the first are marked skip.
  */
 
+import "@testing-library/jest-dom/vitest";
 import { describe, it, expect, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 
@@ -181,7 +183,7 @@ describe("Empty history shows a helpful message and Log CTA", () => {
 // ---------------------------------------------------------------------------
 
 describe("Offline indicator shows the last sync date when data is cached", () => {
-  it.skip(
+  it(
     "renders 'Offline — data as of [date]' when isOffline is true",
     () => {
       /**

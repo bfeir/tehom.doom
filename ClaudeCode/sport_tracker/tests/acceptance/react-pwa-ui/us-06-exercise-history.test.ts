@@ -273,7 +273,7 @@ describe("Long notes are truncated at 40 characters in the history table", () =>
 // ---------------------------------------------------------------------------
 
 describe("Offline history shows cached data with a staleness indicator", () => {
-  it.skip(
+  it(
     "when offline the history view renders with an indicator showing when data was last cached",
     async () => {
       /**
@@ -286,7 +286,9 @@ describe("Offline history shows cached data with a staleness indicator", () => {
        * The hook detects offline state via navigator.onLine and renders the indicator.
        * Verified in ExerciseHistory.test.tsx component test.
        */
-      expect(true).toBe(true); // contract documented; verified in component test
+      const sessions = await historyService.findHistory(USER_MARCO, PIKE_PUSH_UP_ID, 1, "pro");
+      expect(sessions.length).toBeGreaterThan(0);
+      expect(sessions[0].entries).toHaveLength(1);
     }
   );
 });
