@@ -58,9 +58,7 @@ export function AuthScreen(): React.ReactElement {
 
     try {
       if (!navigator.onLine) {
-        setErrorMessage(
-          "Sign-in requires a connection. Please connect and try again."
-        );
+        setErrorMessage(mapAuthError({ message: "Failed to fetch" }));
         return;
       }
 
