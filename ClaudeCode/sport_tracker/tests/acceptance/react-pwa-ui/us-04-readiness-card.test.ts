@@ -47,13 +47,14 @@ beforeAll(async () => {
   PIKE_PUSH_UP_ID = exercises[0]?.id ?? "exercise-pike-push-up";
 
   // Seed: USER_NOT_YET — 1 of 2 qualifying sessions (criterion: consecutiveSessions=2)
+  // targetReps=10, targetSets=3, minFormQuality=3 per Pike Push-up rr_criteria
   {
     const s = await sessionPort.create(USER_NOT_YET);
     await sessionPort.addEntry(s.id, {
       exerciseId: PIKE_PUSH_UP_ID,
       exerciseName: "Pike Push-up (PPP progression)",
       sets: 3,
-      reps: 8,
+      reps: 10,
       formQuality: 4,
       rpe: null,
     });
@@ -67,15 +68,16 @@ beforeAll(async () => {
       exerciseId: PIKE_PUSH_UP_ID,
       exerciseName: "Pike Push-up (PPP progression)",
       sets: 3,
-      reps: 8,
+      reps: 10,
       formQuality: 4,
       rpe: null,
     });
     await sessionPort.close(s.id);
   }
 
-  // Seed: USER_REVIEW — form variance triggers REVIEW (scores 3, 2)
-  for (const [reps, form] of [[8, 3], [8, 2]] as [number, number][]) {
+  // Seed: USER_REVIEW — form variance triggers REVIEW (scores 4, 2 → range=2 ≥ 2)
+  // targetReps=10 to ensure sessions appear in relevant history; form range ≥ 2 triggers REVIEW
+  for (const [reps, form] of [[10, 4], [10, 2]] as [number, number][]) {
     const s = await sessionPort.create(USER_REVIEW);
     await sessionPort.addEntry(s.id, {
       exerciseId: PIKE_PUSH_UP_ID,
@@ -134,7 +136,7 @@ describe("NOT YET signal shows specific gap to advancement", () => {
 // ---------------------------------------------------------------------------
 
 describe("READY signal prompts the practitioner to advance", () => {
-  it.skip(
+  it(
     "READY signal appears with next exercise and progression call-to-action after 3 qualifying sessions",
     async () => {
       /**
@@ -158,7 +160,7 @@ describe("READY signal prompts the practitioner to advance", () => {
 // ---------------------------------------------------------------------------
 
 describe("REVIEW signal provides form guidance without judging the practitioner", () => {
-  it.skip(
+  it(
     "REVIEW signal is shown when form quality is inconsistent across recent sessions",
     async () => {
       /**
@@ -181,7 +183,7 @@ describe("REVIEW signal provides form guidance without judging the practitioner"
 // ---------------------------------------------------------------------------
 
 describe("First session for an exercise shows orientation, not a signal state", () => {
-  it.skip(
+  it(
     "readiness returns null when user has never logged this exercise",
     async () => {
       /**
