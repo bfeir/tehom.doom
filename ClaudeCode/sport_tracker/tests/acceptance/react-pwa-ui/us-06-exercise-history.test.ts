@@ -142,7 +142,7 @@ describe("History shows the last sessions for an exercise as tabular data", () =
 // ---------------------------------------------------------------------------
 
 describe("Free-plan history is filtered to the last 30 days", () => {
-  it.skip(
+  it(
     "sessions older than 30 days are excluded for free-plan users",
     async () => {
       /**
@@ -156,7 +156,7 @@ describe("Free-plan history is filtered to the last 30 days", () => {
     }
   );
 
-  it.skip(
+  it(
     "sessions within the 30-day window are shown for free-plan users",
     async () => {
       /**
@@ -175,7 +175,7 @@ describe("Free-plan history is filtered to the last 30 days", () => {
 // ---------------------------------------------------------------------------
 
 describe("History limit cap prevents returning more than requested sessions", () => {
-  it.skip(
+  it(
     "requesting limit=3 from a user with 5 sessions returns exactly 3",
     async () => {
       /**
@@ -194,7 +194,7 @@ describe("History limit cap prevents returning more than requested sessions", ()
 // ---------------------------------------------------------------------------
 
 describe("Empty history state for an exercise never logged", () => {
-  it.skip(
+  it(
     "findHistory returns an empty array when the user has no sessions for this exercise",
     async () => {
       /**
