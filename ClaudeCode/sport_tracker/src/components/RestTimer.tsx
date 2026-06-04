@@ -1,9 +1,10 @@
-// src/components/RestTimer.tsx — Rest timer display component
-
 import React from "react";
 import { useRestTimer } from "../hooks/useRestTimer.js";
 import { computeRemaining, formatRemaining } from "../lib/timer.js";
 import "../styles/timer.css";
+
+const EXTEND_MS = 15_000;
+const DEFAULT_DURATION_MS = 90_000;
 
 interface RestTimerProps {
   sticky?: boolean;
@@ -35,8 +36,8 @@ export function RestTimer({
     : hook!.remaining;
 
   const handleExtend = isControlled
-    ? () => onExtend?.(15_000)
-    : () => hook!.extend(15_000);
+    ? () => onExtend?.(EXTEND_MS)
+    : () => hook!.extend(EXTEND_MS);
 
   const handleSkip = isControlled
     ? () => onSkip?.()
@@ -91,7 +92,7 @@ function computeControlledRemaining(
   startedAt: number | null | undefined,
   duration: number | undefined
 ): number {
-  const durationMs = duration ?? 90_000;
+  const durationMs = duration ?? DEFAULT_DURATION_MS;
   if (startedAt == null) {
     return durationMs;
   }

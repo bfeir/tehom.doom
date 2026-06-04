@@ -1,11 +1,3 @@
-// src/components/SessionScreen.tsx
-// Session logging screen: displays the open session, logged entry count,
-// a "Log Set" button (wired to useSessionLogger), and a "Done — Close Session"
-// button with confirmation guard when zero sets have been logged.
-//
-// When closedSession prop is provided, renders the close summary instead
-// of the active logging UI.
-
 import React, { useState, useEffect } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useSessionLogger } from "../hooks/useSessionLogger.js";
@@ -17,6 +9,13 @@ import supabaseClient from "../lib/supabaseClient.js";
 import type { Session, ExerciseEntry } from "../types/index.js";
 import "../styles/session.css";
 import { TRANSITION_DURATION } from "../styles/tokens.js";
+
+const SETS_MIN = 1;
+const SETS_MAX = 20;
+const REPS_MIN = 0;
+const REPS_MAX = 100;
+const DEFAULT_SETS = 3;
+const DEFAULT_REPS = 0;
 
 const sessionRepository = new SessionRepository(supabaseClient, false);
 
@@ -47,6 +46,33 @@ function groupEntriesByExercise(entries: ExerciseEntry[]): ExerciseSummary[] {
     }
   }
   return Array.from(byName.values());
+}
+
+interface EntryRowProps {
+  entry: ExerciseEntry;
+  index: number;
+  isDone: boolean;
+  isAnimating: boolean;
+  onToggleDone: (index: number) => void;
+}
+
+function EntryRow({ entry, index, isDone, isAnimating, onToggleDone }: EntryRowProps): React.ReactElement {
+  return (
+    <div
+      key={index}
+      className={`session__exercise${isDone ? " session__exercise--done" : ""}`}
+    >
+      <span className="session__exercise-name">{entry.exerciseName}</span>
+      <span className="session__sets">{entry.sets}×</span>
+      <span className="session__reps">{entry.reps}</span>
+      <button
+        type="button"
+        className={`session__complete-btn${isAnimating ? " session__complete-btn--animated" : ""}`}
+        aria-label={`Mark ${entry.exerciseName} as done`}
+        onClick={() => onToggleDone(index)}
+      />
+    </div>
+  );
 }
 
 function CloseSummary({ session }: { session: Session }): React.ReactElement {
@@ -87,8 +113,8 @@ export function SessionScreen({
   const [doneIndices, setDoneIndices] = useState<Set<number>>(new Set());
   const [animatingIndex, setAnimatingIndex] = useState<number | null>(null);
   const [exerciseName, setExerciseName] = useState("");
-  const [sets, setSets] = useState(3);
-  const [reps, setReps] = useState(0);
+  const [sets, setSets] = useState(DEFAULT_SETS);
+  const [reps, setReps] = useState(DEFAULT_REPS);
   const [repsError, setRepsError] = useState<string | null>(null);
   const [exerciseError, setExerciseError] = useState<string | null>(null);
   const { suggestions } = useExerciseSearch({ query: exerciseName });
@@ -142,17 +168,22 @@ export function SessionScreen({
     setTimeout(() => setAnimatingIndex(null), TRANSITION_DURATION);
   }
 
-  async function handleLogSet(): Promise<void> {
+  function validateLogSetInputs(): boolean {
     setRepsError(null);
     setExerciseError(null);
     if (reps < 1) {
       setRepsError("Enter at least 1 rep");
-      return;
+      return false;
     }
     if (exerciseName.trim() === "") {
       setExerciseError("Please enter an exercise name");
-      return;
+      return false;
     }
+    return true;
+  }
+
+  async function handleLogSet(): Promise<void> {
+    if (!validateLogSetInputs()) return;
     await logSet({
       exerciseId: null,
       exerciseName: exerciseName.trim(),
@@ -185,25 +216,16 @@ export function SessionScreen({
       {/* Logged entries */}
       {entries.length > 0 && (
         <div className="session__entries">
-          {entries.map((entry, index) => {
-            const isDone = doneIndices.has(index);
-            return (
-              <div
-                key={index}
-                className={`session__exercise${isDone ? " session__exercise--done" : ""}`}
-              >
-                <span className="session__exercise-name">{entry.exerciseName}</span>
-                <span className="session__sets">{entry.sets}×</span>
-                <span className="session__reps">{entry.reps}</span>
-                <button
-                  type="button"
-                  className={`session__complete-btn${animatingIndex === index ? " session__complete-btn--animated" : ""}`}
-                  aria-label={`Mark ${entry.exerciseName} as done`}
-                  onClick={() => handleToggleDone(index)}
-                />
-              </div>
-            );
-          })}
+          {entries.map((entry, index) => (
+            <EntryRow
+              key={index}
+              entry={entry}
+              index={index}
+              isDone={doneIndices.has(index)}
+              isAnimating={animatingIndex === index}
+              onToggleDone={handleToggleDone}
+            />
+          ))}
         </div>
       )}
 
@@ -259,10 +281,10 @@ export function SessionScreen({
               id="session-sets"
               className="session__input"
               type="number"
-              min={1}
-              max={20}
+              min={SETS_MIN}
+              max={SETS_MAX}
               value={sets}
-              onChange={(e) => setSets(Math.max(1, parseInt(e.target.value, 10) || 1))}
+              onChange={(e) => setSets(Math.max(SETS_MIN, parseInt(e.target.value, 10) || SETS_MIN))}
             />
           </div>
           <div className="session__input-group session__input-group--fixed">
@@ -271,10 +293,10 @@ export function SessionScreen({
               id="session-reps"
               className="session__input"
               type="number"
-              min={0}
-              max={100}
+              min={REPS_MIN}
+              max={REPS_MAX}
               value={reps}
-              onChange={(e) => setReps(parseInt(e.target.value, 10) || 0)}
+              onChange={(e) => setReps(parseInt(e.target.value, 10) || REPS_MIN)}
             />
             {repsError && (
               <p className="session__field-error">{repsError}</p>

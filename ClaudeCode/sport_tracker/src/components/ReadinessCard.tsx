@@ -9,6 +9,15 @@ export interface ReadinessCardProps {
   onRetry?: () => void;
 }
 
+function RrWikiLink({ url }: { url?: string }): React.ReactElement | null {
+  if (!url) return null;
+  return (
+    <a href={url} target="_blank" rel="noreferrer">
+      RR Wiki
+    </a>
+  );
+}
+
 function OfflineMessage(): React.ReactElement {
   return (
     <div className="readiness-card readiness-card--offline">
@@ -41,11 +50,7 @@ function NotYetCard({ signal }: { signal: ReadinessSignal }): React.ReactElement
     <div className="readiness-card readiness-card--not-yet">
       <h2>Not yet</h2>
       <p>{signal.criterionSummary}</p>
-      {signal.rrWikiUrl && (
-        <a href={signal.rrWikiUrl} target="_blank" rel="noreferrer">
-          RR Wiki
-        </a>
-      )}
+      <RrWikiLink url={signal.rrWikiUrl} />
     </div>
   );
 }
@@ -56,11 +61,7 @@ function ReadyCard({ signal }: { signal: ReadinessSignal }): React.ReactElement 
       <h2>Ready to advance!</h2>
       <p>{signal.criterionSummary}</p>
       <button type="button">View Progression Chain</button>
-      {signal.rrWikiUrl && (
-        <a href={signal.rrWikiUrl} target="_blank" rel="noreferrer">
-          RR Wiki
-        </a>
-      )}
+      <RrWikiLink url={signal.rrWikiUrl} />
     </div>
   );
 }
@@ -71,11 +72,7 @@ function ReviewCard({ signal }: { signal: ReadinessSignal }): React.ReactElement
       <h2>Review your form</h2>
       <p>Check your form before advancing</p>
       <p>{signal.criterionSummary}</p>
-      {signal.rrWikiUrl && (
-        <a href={signal.rrWikiUrl} target="_blank" rel="noreferrer">
-          RR Wiki
-        </a>
-      )}
+      <RrWikiLink url={signal.rrWikiUrl} />
     </div>
   );
 }

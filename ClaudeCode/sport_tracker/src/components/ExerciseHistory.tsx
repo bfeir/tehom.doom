@@ -1,8 +1,8 @@
-// src/components/ExerciseHistory.tsx
 import React from "react";
 import "../styles/history.css";
 
 const NOTE_MAX_LENGTH = 40;
+const DATE_FORMAT_OPTIONS: Intl.DateTimeFormatOptions = { month: "short", day: "numeric" };
 
 function truncateNote(note: string | undefined): string {
   if (!note) return "";
@@ -62,7 +62,7 @@ export function ExerciseHistory({ exerciseName, sessions, isOffline, lastSyncedA
             {sessions.map((session) =>
               session.entries.map((entry, idx) => (
                 <tr key={`${session.id}-${idx}`} className="exercise-history__row">
-                  <td>{session.loggedAt.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</td>
+                  <td>{session.loggedAt.toLocaleDateString("en-US", DATE_FORMAT_OPTIONS)}</td>
                   <td>{entry.exerciseName}</td>
                   <td>{`${entry.sets}×${entry.reps}`}</td>
                   <td>{entry.formQuality !== null ? `${entry.formQuality}/5` : "—"}</td>
