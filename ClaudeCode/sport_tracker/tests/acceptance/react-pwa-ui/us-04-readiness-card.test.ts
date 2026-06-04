@@ -274,7 +274,7 @@ describe("Readiness check is never triggered automatically on set save", () => {
 // ---------------------------------------------------------------------------
 
 describe("Readiness is unavailable for exercises not in the registry", () => {
-  it.skip(
+  it(
     "readiness returns null for a free-text exercise not in the RR registry",
     async () => {
       /**
