@@ -25,25 +25,24 @@ export function RestTimer({
   onExtend,
   onSkip,
 }: RestTimerProps): React.ReactElement {
+  const hook = useRestTimer();
   const isControlled = isRunningProp !== undefined;
 
-  const hook = isControlled ? null : useRestTimer(); // eslint-disable-line react-hooks/rules-of-hooks
-
-  const isRunning = isControlled ? isRunningProp : hook!.isRunning;
+  const isRunning = isControlled ? isRunningProp : hook.isRunning;
 
   const remaining = isControlled
     ? computeControlledRemaining(startedAt, duration)
-    : hook!.remaining;
+    : hook.remaining;
 
   const handleExtend = isControlled
     ? () => onExtend?.(EXTEND_MS)
-    : () => hook!.extend(EXTEND_MS);
+    : () => hook.extend(EXTEND_MS);
 
   const handleSkip = isControlled
     ? () => onSkip?.()
-    : () => hook!.skip();
+    : () => hook.skip();
 
-  const handleStart = isControlled ? () => {} : () => hook!.start();
+  const handleStart = isControlled ? () => {} : () => hook.start();
 
   const className = `timer${sticky ? " timer--sticky" : ""}${isRunning ? " timer--active" : ""}`;
 
