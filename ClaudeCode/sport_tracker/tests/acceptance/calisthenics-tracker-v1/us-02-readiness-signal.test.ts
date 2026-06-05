@@ -47,7 +47,7 @@ beforeAll(async () => {
   PIKE_PUSH_UP_ID = exercises[0].id;
 
   // Resolve the next exercise in the push chain (used in advancement tests)
-  const pushChain = await exerciseRepo.findProgressionChain("push");
+  const pushChain = await exerciseRepo.findProgressionChain("hspu");
   const pikeIndex = pushChain.findIndex((ex) => ex.id === PIKE_PUSH_UP_ID);
   if (pikeIndex >= 0 && pikeIndex + 1 < pushChain.length) {
     FEET_ELEVATED_PPP_ID = pushChain[pikeIndex + 1].id;
@@ -333,12 +333,12 @@ describe("Advancing to the next exercise records the progression with cited evid
      * Then her current exercise reverts to Pike Push-up
      * And the progression event is removed from history
      */
-    await progressionPort.undoLastAdvancement(USER_SOFIA, "push");
+    await progressionPort.undoLastAdvancement(USER_SOFIA, "hspu");
 
-    const progression = await progressionPort.getCurrentProgression(USER_SOFIA, "push");
+    const progression = await progressionPort.getCurrentProgression(USER_SOFIA, "hspu");
     expect(progression!.currentExerciseId).toBe(PIKE_PUSH_UP_ID);
 
-    const history = await progressionPort.findHistory(USER_SOFIA, "push");
+    const history = await progressionPort.findHistory(USER_SOFIA, "hspu");
     // The undone event must not appear in history
     const advancedToFeet = history.find(
       (e) => e.toExerciseId === FEET_ELEVATED_PPP_ID
