@@ -80,7 +80,7 @@ VALUES
     'pike-push-up',
     'Pike Push-up',
     'hspu', 1,
-    '{"targetReps": 10, "targetSets": 3, "minFormQuality": 3, "consecutiveSessions": 2}'::jsonb,
+    '{"targetReps": 8, "targetSets": 3, "minFormQuality": 3, "consecutiveSessions": 2}'::jsonb,
     'https://www.reddit.com/r/bodyweightfitness/wiki/kb/recommended_routine', 'rr-2024'
   ),
   (
@@ -105,9 +105,16 @@ VALUES
     'https://www.reddit.com/r/bodyweightfitness/wiki/kb/recommended_routine', 'rr-2024'
   ),
   (
+    'deficit-wall-hspu',
+    'Deficit Wall Handstand Push-up',
+    'hspu', 5,
+    '{"targetReps": 3, "targetSets": 3, "minFormQuality": 3, "consecutiveSessions": 2}'::jsonb,
+    'https://www.reddit.com/r/bodyweightfitness/wiki/kb/recommended_routine', 'rr-2024'
+  ),
+  (
     'freestanding-hspu',
     'Freestanding Handstand Push-up',
-    'hspu', 5,
+    'hspu', 6,
     '{"targetReps": 3, "targetSets": 3, "minFormQuality": 4, "consecutiveSessions": 3}'::jsonb,
     'https://www.reddit.com/r/bodyweightfitness/wiki/kb/recommended_routine', 'rr-2024'
   )
