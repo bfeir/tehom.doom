@@ -67,7 +67,7 @@ beforeAll(async () => {
   PIKE_PUSH_UP_ID = pikeResults[0].id;
 
   // Resolve or create Australian Rows exercise for 03-7 (flat trend)
-  const rowsResults = await exerciseRepo.search("rows");
+  const rowsResults = await exerciseRepo.search("row");
   const australianRows = rowsResults.find((e) =>
     e.name.toLowerCase().includes("australian")
   );
@@ -80,7 +80,7 @@ beforeAll(async () => {
       .insert({
         slug: "australian-rows-test",
         name: "Australian Rows",
-        track: "pull",
+        track: "row",
         chain_order: 1,
         rr_criteria: JSON.stringify({
           targetReps: 10,
