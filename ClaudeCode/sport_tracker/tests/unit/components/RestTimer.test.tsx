@@ -338,6 +338,80 @@ describe("RestTimer hook mode — extend and skip buttons call hook methods", ()
 });
 
 // ---------------------------------------------------------------------------
+// sticky class + null-callback safety tests — step 01-04
+// Test Budget: 2 distinct behaviors × 2 = 4 max unit tests (using 2)
+//   B1: sticky=true + hook running → root className contains 'timer--sticky'
+//   B2: controlled mode, no onExtend/onSkip callbacks → clicking +15s and Skip does not throw
+// ---------------------------------------------------------------------------
+
+describe("RestTimer sticky modifier class (step 01-04)", () => {
+  afterEach(() => {
+    cleanup();
+  });
+
+  beforeEach(() => {
+    (useRestTimer as ReturnType<typeof vi.fn>).mockReturnValue({
+      remaining: 60_000,
+      isRunning: true,
+      start: vi.fn(),
+      skip: vi.fn(),
+      extend: vi.fn(),
+      setDefaultDuration: vi.fn(),
+    });
+  });
+
+  /**
+   * B1: Given sticky=true and the hook reports isRunning=true
+   * When RestTimer renders
+   * Then the root element className contains 'timer--sticky'
+   */
+  it("root className contains 'timer--sticky' when sticky=true and timer is running", () => {
+    render(<RestTimer sticky={true} />);
+    const root = screen.getByRole("timer");
+    expect(root.className).toContain("timer--sticky");
+  });
+});
+
+describe("RestTimer controlled mode — null callbacks do not throw (step 01-04)", () => {
+  afterEach(() => {
+    cleanup();
+  });
+
+  beforeEach(() => {
+    (useRestTimer as ReturnType<typeof vi.fn>).mockReturnValue({
+      remaining: 60_000,
+      isRunning: true,
+      start: vi.fn(),
+      skip: vi.fn(),
+      extend: vi.fn(),
+      setDefaultDuration: vi.fn(),
+    });
+  });
+
+  /**
+   * B2: Given the timer is in controlled mode (startedAt/duration/isRunning props, no onExtend/onSkip)
+   * When the user clicks +15s then Skip
+   * Then no error is thrown
+   */
+  it("clicking +15s and Skip with no onExtend/onSkip callbacks does not throw", async () => {
+    const user = userEvent.setup();
+    render(
+      <RestTimer
+        startedAt={Date.now() - 30_000}
+        duration={90_000}
+        isRunning={true}
+      />
+    );
+    await expect(
+      user.click(screen.getByRole("button", { name: /\+15s/i }))
+    ).resolves.not.toThrow();
+    await expect(
+      user.click(screen.getByRole("button", { name: /skip/i }))
+    ).resolves.not.toThrow();
+  });
+});
+
+// ---------------------------------------------------------------------------
 // BEM className tests — step 01-05
 // Test Budget: 5 distinct behaviors × 2 = 10 max unit tests (using 5)
 // ---------------------------------------------------------------------------

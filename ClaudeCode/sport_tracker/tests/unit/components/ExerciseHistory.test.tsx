@@ -205,3 +205,79 @@ describe("Offline indicator shows the last sync date when data is cached", () =>
     }
   );
 });
+
+// ---------------------------------------------------------------------------
+// Boundary / mutation-coverage tests — step 01-04
+// Test Budget: 3 distinct behaviors × 2 = 6 max unit tests (using 3)
+//   B6: note exactly 40 chars → returned as-is, no '...'
+//   B7: formQuality=null → renders '—'
+//   B8: isOffline=true, no lastSyncedAt → renders "offline" fallback message
+// ---------------------------------------------------------------------------
+
+describe("Note exactly 40 characters is NOT truncated (step 01-04)", () => {
+  /**
+   * B6: Given a session note that is exactly 40 characters long
+   * When ExerciseHistory renders
+   * Then the note is displayed as-is without '...' appended
+   */
+  it("renders a 40-character note without truncation", () => {
+    const exactNote = "A".repeat(40); // exactly at the boundary
+    const sessions = [
+      {
+        ...SAMPLE_SESSIONS[0],
+        entries: [{ ...SAMPLE_SESSIONS[0].entries[0], note: exactNote }],
+      },
+    ];
+    render(
+      <ExerciseHistory
+        exerciseName="Pike Push-ups (PPP progression)"
+        sessions={sessions}
+        isOffline={false}
+      />
+    );
+    expect(screen.getByText(exactNote)).toBeInTheDocument();
+    expect(screen.queryByText(exactNote + "...")).toBeNull();
+  });
+});
+
+describe("formQuality=null renders '—' in the table row (step 01-04)", () => {
+  /**
+   * B7: Given an entry with formQuality=null
+   * When ExerciseHistory renders
+   * Then the cell shows the em-dash '—' placeholder
+   */
+  it("renders '—' when formQuality is null", () => {
+    const sessions = [
+      {
+        ...SAMPLE_SESSIONS[0],
+        entries: [{ ...SAMPLE_SESSIONS[0].entries[0], formQuality: null }],
+      },
+    ];
+    render(
+      <ExerciseHistory
+        exerciseName="Pike Push-ups (PPP progression)"
+        sessions={sessions}
+        isOffline={false}
+      />
+    );
+    expect(screen.getByText("—")).toBeInTheDocument();
+  });
+});
+
+describe("Offline fallback message when no lastSyncedAt is provided (step 01-04)", () => {
+  /**
+   * B8: Given isOffline=true and no lastSyncedAt prop
+   * When ExerciseHistory renders
+   * Then a fallback offline message is visible containing "offline"
+   */
+  it("renders offline fallback message when isOffline=true and lastSyncedAt is omitted", () => {
+    render(
+      <ExerciseHistory
+        exerciseName="Pike Push-ups (PPP progression)"
+        sessions={SAMPLE_SESSIONS}
+        isOffline={true}
+      />
+    );
+    expect(screen.getByText(/offline/i)).toBeInTheDocument();
+  });
+});
