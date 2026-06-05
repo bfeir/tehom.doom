@@ -106,7 +106,8 @@ export function SessionScreen({
     sessionId,
     sessionPort: sessionRepository,
   });
-  const { closeSession, setCurrentExercise } = useSessionStore();
+  const closeSession = useSessionStore((s) => s.closeSession);
+  const setCurrentExercise = useSessionStore((s) => s.setCurrentExercise);
   const [confirmClose, setConfirmClose] = useState(false);
   const [isClosing, setIsClosing] = useState(false);
   const [closeError, setCloseError] = useState<string | null>(null);

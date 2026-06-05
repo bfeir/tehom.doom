@@ -5,6 +5,8 @@ import type { Exercise } from "../types/index.js";
 import { ExerciseRepository } from "../repositories/ExerciseRepository.js";
 import supabaseClient from "../lib/supabaseClient.js";
 
+const EMPTY_SUGGESTIONS: Exercise[] = [];
+
 export interface UseExerciseSearchArgs {
   query: string;
   exercisePort?: Pick<ExercisePort, "search">;
@@ -34,7 +36,7 @@ export function useExerciseSearch({
   });
 
   return {
-    suggestions: data ?? [],
+    suggestions: data ?? EMPTY_SUGGESTIONS,
     isLoading,
     error: error != null ? "Could not load suggestions." : null,
   };

@@ -50,9 +50,9 @@ vi.mock("../../../src/hooks/useSessionLogger.js", () => ({
   useSessionLogger: vi.fn(),
 }));
 
-// Mock useSessionStore to prevent store side effects
+// Mock useSessionStore to prevent store side effects.
 vi.mock("../../../src/stores/sessionStore.js", () => ({
-  useSessionStore: vi.fn(() => ({ openSession: null, closeSession: vi.fn(), setCurrentExercise: vi.fn() })),
+  useSessionStore: vi.fn(),
 }));
 
 // Mock useExerciseSearch to prevent real hook execution in tests
@@ -77,6 +77,12 @@ beforeEach(() => {
     isLoading: false,
     error: null,
   });
+  // Default useSessionStore supports selector-style calls (component uses individual selectors).
+  const defaultStore = { openSession: null, closeSession: vi.fn(), setCurrentExercise: vi.fn() };
+  (useSessionStore as unknown as Mock).mockImplementation(
+    (selector?: (s: typeof defaultStore) => unknown) =>
+      selector ? selector(defaultStore) : defaultStore
+  );
 });
 
 // ---------------------------------------------------------------------------
@@ -690,11 +696,10 @@ describe("setCurrentExercise wiring (step 01-01)", () => {
    */
   it("calls setCurrentExercise with the matching exercise id when exerciseName matches a suggestion", async () => {
     const setCurrentExerciseSpy = vi.fn();
-    (useSessionStore as unknown as Mock).mockReturnValue({
-      openSession: null,
-      closeSession: vi.fn(),
-      setCurrentExercise: setCurrentExerciseSpy,
-    });
+    const store = { openSession: null, closeSession: vi.fn(), setCurrentExercise: setCurrentExerciseSpy };
+    (useSessionStore as unknown as Mock).mockImplementation(
+      (selector?: (s: typeof store) => unknown) => selector ? selector(store) : store
+    );
     (useExerciseSearch as unknown as Mock).mockReturnValue({
       suggestions: [pushUpSuggestion],
       isLoading: false,
@@ -722,11 +727,10 @@ describe("setCurrentExercise wiring (step 01-01)", () => {
    */
   it("calls setCurrentExercise with null when exerciseName does not match any suggestion", async () => {
     const setCurrentExerciseSpy = vi.fn();
-    (useSessionStore as unknown as Mock).mockReturnValue({
-      openSession: null,
-      closeSession: vi.fn(),
-      setCurrentExercise: setCurrentExerciseSpy,
-    });
+    const store = { openSession: null, closeSession: vi.fn(), setCurrentExercise: setCurrentExerciseSpy };
+    (useSessionStore as unknown as Mock).mockImplementation(
+      (selector?: (s: typeof store) => unknown) => selector ? selector(store) : store
+    );
     (useExerciseSearch as unknown as Mock).mockReturnValue({
       suggestions: [pushUpSuggestion],
       isLoading: false,
