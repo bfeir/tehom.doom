@@ -386,6 +386,110 @@ describe("Checkmark microinteraction after set is saved (step 02-01)", () => {
 });
 
 // ---------------------------------------------------------------------------
+// Step 01-03 (mutation-coverage-followup) — loading/error/plural/dialog-copy coverage
+// Test budget: 6 behaviors × 2 = 12 max (using 6)
+//   B1: isLoading=true → "Saving…" visible
+//   B2: error="Failed" → role="alert" visible containing error
+//   B3: 1 entry → badge "1 set"
+//   B4: 2 entries → badge "2 sets"
+//   B5: confirm dialog, 0 entries → "You haven't logged any sets yet."
+//   B6: confirm dialog, 2 entries → "2 sets will be saved."
+// ---------------------------------------------------------------------------
+
+describe("SessionScreen loading and error states (mutation-coverage-followup)", () => {
+  /**
+   * B1: When useSessionLogger returns isLoading=true
+   * Then the "Saving…" element is visible in the DOM.
+   *
+   * Given the hook is in a loading state
+   * When the SessionScreen renders
+   * Then an element with text "Saving…" is visible
+   */
+  it("shows Saving… element when isLoading is true", () => {
+    (useSessionLogger as unknown as Mock).mockReturnValue({
+      logSet: vi.fn(),
+      currentSession: null,
+      isLoading: true,
+      error: null,
+    });
+    render(withQueryClient(<SessionScreen sessionId="s1" userId="u1" />));
+    expect(screen.getByText("Saving…")).toBeInTheDocument();
+  });
+
+  /**
+   * B2: When useSessionLogger returns error="Failed"
+   * Then an element with role="alert" is visible and contains the error text.
+   *
+   * Given the hook exposes an error string
+   * When the SessionScreen renders
+   * Then a role="alert" element is present containing that error
+   */
+  it("shows role=alert element containing the error string when error is set", () => {
+    (useSessionLogger as unknown as Mock).mockReturnValue({
+      logSet: vi.fn(),
+      currentSession: null,
+      isLoading: false,
+      error: "Failed",
+    });
+    render(withQueryClient(<SessionScreen sessionId="s1" userId="u1" />));
+    const alert = screen.getByRole("alert");
+    expect(alert).toBeInTheDocument();
+    expect(alert).toHaveTextContent("Failed");
+  });
+});
+
+describe("SessionScreen entryCount badge plural (mutation-coverage-followup)", () => {
+  /**
+   * B3+B4: badge shows singular "set" for 1 entry and plural "sets" for 2 entries.
+   *
+   * Given a session with N entries
+   * When rendered
+   * Then the aria-label="Sets logged" span shows "{N} set" or "{N} sets"
+   */
+  it.each([
+    [1, "1 set"],
+    [2, "2 sets"],
+  ])(
+    "badge shows '%s' when currentSession has %i entr(y|ies)",
+    (count, expected) => {
+      const entries = Array.from({ length: count }, () => makeEntry());
+      setupSessionLoggerMock(entries);
+      render(withQueryClient(<SessionScreen sessionId="s1" userId="u1" />));
+      expect(screen.getByLabelText(/sets logged/i)).toHaveTextContent(expected);
+    }
+  );
+});
+
+describe("SessionScreen confirm dialog body copy (mutation-coverage-followup)", () => {
+  /**
+   * B5: When the confirm dialog opens with 0 entries
+   * Then body shows "You haven't logged any sets yet."
+   *
+   * B6: When the confirm dialog opens with 2 entries
+   * Then body shows "2 sets will be saved."
+   *
+   * Given the user clicks the "Close session" button
+   * When the dialog opens
+   * Then the body copy reflects the current entryCount
+   */
+  it.each([
+    [0, "You haven't logged any sets yet."],
+    [2, "2 sets will be saved."],
+  ])(
+    "confirm dialog shows correct body copy for %i entr(y|ies)",
+    async (count, expectedText) => {
+      const entries = Array.from({ length: count }, () => makeEntry());
+      setupSessionLoggerMock(entries);
+      const user = userEvent.setup();
+      render(withQueryClient(<SessionScreen sessionId="s1" userId="u1" />));
+      await user.click(screen.getByRole("button", { name: /close session/i }));
+      expect(screen.getByRole("dialog")).toBeInTheDocument();
+      expect(screen.getByRole("dialog")).toHaveTextContent(expectedText);
+    }
+  );
+});
+
+// ---------------------------------------------------------------------------
 // Step 01-03 — Set counter context label in RestTimer
 // Test budget: 2 behaviors × 2 = 4 max unit tests (using 3)
 //   B1: idle with 0 sets → shows "Set 1"
