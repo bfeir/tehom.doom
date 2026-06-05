@@ -746,6 +746,122 @@ describe("setCurrentExercise wiring (step 01-01)", () => {
 });
 
 // ---------------------------------------------------------------------------
+// Step 01-05 (mutation-coverage-followup) — isClosing text, closeError, suggestions guard, entries guard
+// Test budget: 5 behaviors × 2 = 10 max (using 5)
+//   B1: isClosing=true → close button shows "Closing…"
+//   B2: closeError set → role="alert" shows error text (distinct from logSet error)
+//   B3: suggestions non-empty → exercise input aria-expanded="true"
+//   B4: suggestions empty → exercise input aria-expanded="false"
+//   B5: entries=[] → .session__entries NOT rendered
+// ---------------------------------------------------------------------------
+
+describe("SessionScreen exercise input aria-expanded state (step 01-05)", () => {
+  /**
+   * B3: When useExerciseSearch returns suggestions
+   * Then the exercise combobox input has aria-expanded="true"
+   *
+   * Given the exercise search hook returns one suggestion
+   * When the SessionScreen renders
+   * Then aria-expanded on the combobox is "true"
+   */
+  it("exercise input has aria-expanded=true when suggestions are returned", () => {
+    (useExerciseSearch as unknown as Mock).mockReturnValue({
+      suggestions: [{ id: "1", name: "Push-up" }],
+      isLoading: false,
+      error: null,
+    });
+    setupSessionLoggerMock();
+    render(withQueryClient(<SessionScreen sessionId="s1" userId="u1" />));
+    const input = screen.getByRole("combobox", { name: /exercise/i });
+    expect(input).toHaveAttribute("aria-expanded", "true");
+  });
+
+  /**
+   * B4: When useExerciseSearch returns no suggestions
+   * Then the exercise combobox input has aria-expanded="false"
+   *
+   * Given the exercise search hook returns an empty array
+   * When the SessionScreen renders
+   * Then aria-expanded on the combobox is "false"
+   */
+  it("exercise input has aria-expanded=false when no suggestions are returned", () => {
+    (useExerciseSearch as unknown as Mock).mockReturnValue({
+      suggestions: [],
+      isLoading: false,
+      error: null,
+    });
+    setupSessionLoggerMock();
+    render(withQueryClient(<SessionScreen sessionId="s1" userId="u1" />));
+    const input = screen.getByRole("combobox", { name: /exercise/i });
+    expect(input).toHaveAttribute("aria-expanded", "false");
+  });
+});
+
+describe("SessionScreen entries section guard (step 01-05)", () => {
+  /**
+   * B5: When currentSession has no entries (entries=[]/null)
+   * Then the .session__entries section is NOT rendered
+   *
+   * Given currentSession is null (no entries)
+   * When the SessionScreen renders
+   * Then no element with class session__entries exists in the DOM
+   */
+  it("does not render .session__entries when entries are empty", () => {
+    setupSessionLoggerMock([]); // currentSession=null → entries=[]
+    const { container } = render(withQueryClient(<SessionScreen sessionId="s1" userId="u1" />));
+    expect(container.querySelector(".session__entries")).toBeNull();
+  });
+});
+
+describe("SessionScreen isClosing and closeError states (step 01-05)", () => {
+  /**
+   * B1: When isClosing=true (repository.close not yet resolved)
+   * Then the close button shows "Closing…" text
+   *
+   * Given sessionRepository.close returns a never-resolving promise
+   * When the user clicks "Close session" then "End session"
+   * Then the close button text is "Closing…" (synchronously after setIsClosing(true))
+   */
+  it("close button shows Closing… while the session is being closed", async () => {
+    setupSessionLoggerMock();
+    // Mock close to never resolve — captures the isClosing=true mid-flight state
+    const mockRepo = (SessionRepository as unknown as ReturnType<typeof vi.fn>).mock.results.at(-1)?.value;
+    mockRepo.close.mockReturnValue(new Promise(() => { /* never resolves */ }));
+    const user = userEvent.setup();
+    render(withQueryClient(<SessionScreen sessionId="s1" userId="u1" />));
+
+    await user.click(screen.getByRole("button", { name: /close session/i }));
+    // Click "End session" — setIsClosing(true) runs synchronously before the await
+    await user.click(screen.getByRole("button", { name: /end session/i }));
+
+    expect(screen.getByRole("button", { name: /close session/i })).toHaveTextContent("Closing…");
+  });
+
+  /**
+   * B2: When sessionRepository.close rejects
+   * Then a role="alert" element shows the error message
+   *
+   * Given sessionRepository.close rejects with a known error
+   * When the user confirms close
+   * Then a role="alert" element containing the error text appears
+   */
+  it("shows role=alert with close error text when repository close rejects", async () => {
+    setupSessionLoggerMock();
+    const mockRepo = (SessionRepository as unknown as ReturnType<typeof vi.fn>).mock.results.at(-1)?.value;
+    mockRepo.close.mockRejectedValue(new Error("Network error"));
+    const user = userEvent.setup();
+    render(withQueryClient(<SessionScreen sessionId="s1" userId="u1" />));
+
+    await user.click(screen.getByRole("button", { name: /close session/i }));
+    await user.click(screen.getByRole("button", { name: /end session/i }));
+
+    const alerts = screen.getAllByRole("alert");
+    const closeErrorAlert = alerts.find((el) => el.textContent === "Network error");
+    expect(closeErrorAlert).toBeDefined();
+  });
+});
+
+// ---------------------------------------------------------------------------
 // Step 01-01 (mutation-coverage-followup) — confirm-close dialog and hasPendingSync
 // Test budget: 4 behaviors × 2 = 8 max unit tests (using 4)
 //   B1: clicking "Done — End Session" shows confirmation overlay (role="dialog")
