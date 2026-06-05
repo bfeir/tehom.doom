@@ -24,6 +24,16 @@ function withQueryClient(ui: React.ReactElement): React.ReactElement {
   return <QueryClientProvider client={client}>{ui}</QueryClientProvider>;
 }
 
+// Mock SessionRepository so sessionRepository.close can be spied on in tests
+vi.mock("../../../src/repositories/SessionRepository.js", () => ({
+  SessionRepository: vi.fn().mockImplementation(() => ({
+    addEntry: vi.fn().mockResolvedValue({ id: "s1", isOpen: true, entries: [], loggedAt: new Date(), syncedAt: null }),
+    close: vi.fn().mockResolvedValue(undefined),
+    sync: vi.fn(),
+    getOpenSession: vi.fn(),
+  })),
+}));
+
 // Mock Supabase client to prevent initialization error in test environment
 vi.mock("../../../src/lib/supabaseClient.js", () => ({
   default: {
@@ -52,6 +62,7 @@ vi.mock("../../../src/hooks/useExerciseSearch.js", () => ({
 
 // Scaffold import — will throw until implemented
 import { SessionScreen } from "../../../src/components/SessionScreen.js";
+import { SessionRepository } from "../../../src/repositories/SessionRepository.js";
 import { useSessionLogger } from "../../../src/hooks/useSessionLogger.js";
 import { useExerciseSearch } from "../../../src/hooks/useExerciseSearch.js";
 import { useSessionStore } from "../../../src/stores/sessionStore.js";
@@ -627,5 +638,116 @@ describe("setCurrentExercise wiring (step 01-01)", () => {
     });
 
     expect(setCurrentExerciseSpy).toHaveBeenCalledWith(null);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Step 01-01 (mutation-coverage-followup) — confirm-close dialog and hasPendingSync
+// Test budget: 4 behaviors × 2 = 8 max unit tests (using 4)
+//   B1: clicking "Done — End Session" shows confirmation overlay (role="dialog")
+//   B2: clicking "End session" inside overlay calls sessionRepository.close and hides overlay
+//   B3: clicking "Keep going" inside overlay hides it without closing
+//   B4: CloseSummary with syncedAt=new Date() does NOT show "Saved offline" text
+// ---------------------------------------------------------------------------
+
+describe("Session close confirmation overlay (mutation-coverage-followup)", () => {
+  beforeEach(() => {
+    // Reset call history on the shared module-level sessionRepository instance
+    const mockRepo = (SessionRepository as unknown as ReturnType<typeof vi.fn>).mock.results.at(-1)?.value;
+    if (mockRepo) {
+      mockRepo.close.mockClear();
+    }
+  });
+
+  /**
+   * B1: Clicking "Done — End Session" (aria-label "Close session") shows
+   * the confirmation overlay with role="dialog".
+   *
+   * Given the SessionScreen is in active session mode
+   * When the user clicks the "Done — End Session" button
+   * Then a dialog with role="dialog" is visible
+   */
+  it("clicking Close session button shows the confirmation dialog", async () => {
+    setupSessionLoggerMock();
+    const user = userEvent.setup();
+    render(withQueryClient(<SessionScreen sessionId="s1" userId="u1" />));
+
+    await user.click(screen.getByRole("button", { name: /close session/i }));
+
+    expect(screen.getByRole("dialog")).toBeInTheDocument();
+  });
+
+  /**
+   * B2: Clicking "End session" inside the overlay calls sessionRepository.close
+   * and hides the overlay.
+   *
+   * Given the confirmation overlay is visible
+   * When the user clicks "End session"
+   * Then sessionRepository.close is called with the sessionId
+   * And the dialog is no longer in the DOM
+   */
+  it("clicking End session in overlay calls repository close and hides the dialog", async () => {
+    setupSessionLoggerMock();
+    const user = userEvent.setup();
+    render(withQueryClient(<SessionScreen sessionId="s1" userId="u1" />));
+
+    await user.click(screen.getByRole("button", { name: /close session/i }));
+    expect(screen.getByRole("dialog")).toBeInTheDocument();
+
+    const mockRepo = (SessionRepository as unknown as ReturnType<typeof vi.fn>).mock.results.at(-1)?.value;
+    await user.click(screen.getByRole("button", { name: /end session/i }));
+
+    expect(mockRepo.close).toHaveBeenCalledWith("s1");
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+  });
+
+  /**
+   * B3: Clicking "Keep going" inside the overlay hides it without closing the session.
+   *
+   * Given the confirmation overlay is visible
+   * When the user clicks "Keep going"
+   * Then the dialog disappears
+   * And sessionRepository.close is NOT called
+   */
+  it("clicking Keep going hides the overlay without calling repository close", async () => {
+    setupSessionLoggerMock();
+    const user = userEvent.setup();
+    render(withQueryClient(<SessionScreen sessionId="s1" userId="u1" />));
+
+    await user.click(screen.getByRole("button", { name: /close session/i }));
+    expect(screen.getByRole("dialog")).toBeInTheDocument();
+
+    const mockRepo = (SessionRepository as unknown as ReturnType<typeof vi.fn>).mock.results.at(-1)?.value;
+    await user.click(screen.getByRole("button", { name: /keep going/i }));
+
+    expect(mockRepo.close).not.toHaveBeenCalled();
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+  });
+
+  /**
+   * B4: CloseSummary rendered with syncedAt=new Date() (non-null) does NOT
+   * show "Saved offline" text — hasPendingSync branch is false.
+   *
+   * Given a closed session where syncedAt is a Date (already synced)
+   * When the SessionScreen renders with closedSession prop
+   * Then "Saved offline" text is absent from the DOM
+   */
+  it("CloseSummary with non-null syncedAt does not show Saved offline text", () => {
+    const syncedSession: Session = {
+      id: "session-synced",
+      userId: "user-marco",
+      isOpen: false,
+      loggedAt: new Date("2026-04-27T10:00:00Z"),
+      syncedAt: new Date("2026-04-27T10:05:00Z"),
+      entries: [
+        { exerciseId: "ex-pike", exerciseName: "Pike Push-ups", sets: 3, reps: 8, formQuality: null, rpe: null },
+      ],
+    };
+
+    render(withQueryClient(
+      <SessionScreen sessionId="session-synced" userId="user-marco" closedSession={syncedSession} />
+    ));
+
+    expect(screen.queryByText(/saved offline/i)).not.toBeInTheDocument();
   });
 });
