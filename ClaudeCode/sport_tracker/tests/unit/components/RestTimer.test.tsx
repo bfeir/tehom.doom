@@ -258,6 +258,86 @@ describe("RestTimer omits label element when setNumber is not provided (step 01-
 });
 
 // ---------------------------------------------------------------------------
+// setNumber label and hook extend/skip tests — step 01-02
+// Test Budget: 3 distinct behaviors × 2 = 6 max unit tests (using 3)
+//   B1: setNumber=2 + RUNNING → label "Rest after set 2"
+//   B2: setNumber=2 + IDLE    → label "Set 3"
+//   B3: hook mode extend/skip buttons call hook.extend / hook.skip
+// ---------------------------------------------------------------------------
+
+describe("RestTimer label (hook mode) — setNumber=2 while RUNNING shows 'Rest after set 2'", () => {
+  afterEach(() => {
+    cleanup();
+  });
+
+  /**
+   * B1: Given setNumber=2 and the timer is RUNNING (hook mode)
+   * When RestTimer renders
+   * Then the label reads "Rest after set 2"
+   */
+  it("displays 'Rest after set 2' when setNumber=2 and timer is running", () => {
+    (useRestTimer as ReturnType<typeof vi.fn>).mockReturnValue({
+      remaining: 60_000,
+      isRunning: true,
+      start: vi.fn(),
+      skip: vi.fn(),
+      extend: vi.fn(),
+      setDefaultDuration: vi.fn(),
+    });
+    render(<RestTimer setNumber={2} />);
+    expect(screen.getByText("Rest after set 2")).not.toBeNull();
+  });
+
+  /**
+   * B2: Given setNumber=2 and the timer is IDLE (hook mode)
+   * When RestTimer renders
+   * Then the label reads "Set 3" (setNumber + 1)
+   */
+  it("displays 'Set 3' when setNumber=2 and timer is idle", () => {
+    (useRestTimer as ReturnType<typeof vi.fn>).mockReturnValue({
+      remaining: 90_000,
+      isRunning: false,
+      start: vi.fn(),
+      skip: vi.fn(),
+      extend: vi.fn(),
+      setDefaultDuration: vi.fn(),
+    });
+    render(<RestTimer setNumber={2} />);
+    expect(screen.getByText("Set 3")).not.toBeNull();
+  });
+});
+
+describe("RestTimer hook mode — extend and skip buttons call hook methods", () => {
+  afterEach(() => {
+    cleanup();
+  });
+
+  /**
+   * B3: Given the timer is RUNNING in hook mode
+   * When the user clicks "+15s" then clicking "Skip"
+   * Then hook.extend(15000) and hook.skip() are each called once
+   */
+  it("clicking +15s calls hook.extend(15000) and clicking Skip calls hook.skip()", async () => {
+    const extend = vi.fn();
+    const skip = vi.fn();
+    (useRestTimer as ReturnType<typeof vi.fn>).mockReturnValue({
+      remaining: 60_000,
+      isRunning: true,
+      start: vi.fn(),
+      skip,
+      extend,
+      setDefaultDuration: vi.fn(),
+    });
+    const user = userEvent.setup();
+    render(<RestTimer />);
+    await user.click(screen.getByRole("button", { name: /\+15s/i }));
+    expect(extend).toHaveBeenCalledWith(15_000);
+    await user.click(screen.getByRole("button", { name: /skip/i }));
+    expect(skip).toHaveBeenCalledTimes(1);
+  });
+});
+
+// ---------------------------------------------------------------------------
 // BEM className tests — step 01-05
 // Test Budget: 5 distinct behaviors × 2 = 10 max unit tests (using 5)
 // ---------------------------------------------------------------------------
