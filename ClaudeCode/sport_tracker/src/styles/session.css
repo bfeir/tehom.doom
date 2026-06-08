@@ -193,6 +193,11 @@
 .session__close-section {
   margin-top: auto;
   padding-top: var(--spacing-4);
+  position: sticky;
+  bottom: 0;
+  background: var(--bg-base);
+  z-index: 1;
+  padding-bottom: env(safe-area-inset-bottom);
 }
 
 .session__close-btn {
