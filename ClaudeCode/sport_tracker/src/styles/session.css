@@ -191,7 +191,6 @@
    ---------------------------------------------------------------------- */
 
 .session__close-section {
-  margin-top: auto;
   padding-top: var(--spacing-4);
   position: sticky;
   bottom: 0;
